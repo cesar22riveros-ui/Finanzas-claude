@@ -1634,7 +1634,7 @@ const Forms = (() => {
     };
   }
 
-  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+  if (route.name === 'settings') { document.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { state.settings.theme = b.dataset.theme; persist(); applyTheme(); renderContent(); }); const lock = document.getElementById('lockToggle'); if (lock) lock.onchange = () => { state.settings.lockEnabled = lock.checked; persist(); }; document.getElementById('btnExport').onclick = () => { const csv = DB.exportCSV(state); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ledger-movimientos.csv'; a.click(); UI.toast('CSV exportado'); }; document.getElementById('btnReset').onclick = () => { if (confirm('Esto reemplazará todos tus datos actuales por datos de ejemplo. ¿Continuar?')) { state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos'); } }; const _bni = document.getElementById('btnNuevoInicio'); if (_bni) _bni.onclick = () => { if (confirm('¿Iniciar desde cero? Se borrarán TODAS las cuentas y movimientos. Esto no se puede deshacer.') ) { localStorage.removeItem('ledger:v1'); location.reload(); } }; } function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
   /* ---------------- Online/offline ---------------- */
   window.addEventListener('online', () => { const p = document.getElementById('statusPill'); if (p) { p.classList.remove('offline'); p.innerHTML = '<span class="status-dot"></span>En línea'; } });
