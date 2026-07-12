@@ -1468,8 +1468,7 @@ const Forms = (() => {
       };
       document.getElementById('btnReset').onclick = () => {
         if (confirm('Esto reemplazará todos tus datos actuales por datos de ejemplo. ¿Continuar?')) {
-          state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos'); } }; const _bni = document.getElementById('btnNuevoInicio'); if (_bni) _bni.onclick = () => { if (confirm('⚠️ ¿Iniciar desde cero? Se eliminarán TODAS las cuentas, movimientos y datos. No se puede deshacer.')) { localStorage.removeItem('ledger:v1'); location.reload(); } };
-        }
+          state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos'); } }; document.getElementById('btnNuevoInicio') && (document.getElementById('btnNuevoInicio').onclick = () => { if (confirm('¿Iniciar desde cero? Se borrarán TODAS las cuentas y movimientos. Esto no se puede deshacer.')) { localStorage.removeItem('ledger:v1'); location.reload(); } }); = document.getElementById('btnNuevoInicio'); if (_bni) _bni.onclick = () => { if (confirm('⚠️ ¿Iniciar desde cero? Se eliminarán TODAS las cuentas, movimientos y datos. No se puede deshacer.')) { localStorage.removeItem('ledger:v1'); location.reload(); } };
       };
     }
   }
