@@ -1161,7 +1161,7 @@ const Views = (() => {
       <div class="card-head"><h3>Datos</h3></div>
       <div class="btn-row">
         <button class="btn" id="btnExport">${icon('download')} Exportar CSV</button>
-        <button class="btn danger" id="btnReset">${icon('reset')} Restablecer datos de ejemplo</button>
+        <button class="btn danger" id="btnReset">${icon('reset')} Restablecer datos de ejemplo</button>         <button class="btn danger" id="btnNuevoInicio" style="border-color:var(--expense);border-width:2px;">${icon('trash')} Iniciar desde cero</button>
       </div>
       <p class="hint">Tus datos se guardan solo en este dispositivo (localStorage). Exportar te permite respaldarlos.</p>
     </div>
@@ -1321,7 +1321,7 @@ const Forms = (() => {
       </div>
       <div class="field"><label>Color</label>${colorSwatches(a.color)}<input type="hidden" name="color" value="${a.color}"></div>
       <button class="btn primary block" type="submit">Guardar cuenta</button>
-      ${existing ? `<button type="button" class="btn danger block" id="btnDeactivate" style="margin-top:8px;">Desactivar cuenta</button>` : ''}
+      ${existing ? `<button type="button" class="btn danger block" id="btnDeactivate" style="margin-top:8px;">Eliminar cuenta</button>` : ''}
     </form>`;
   }
 
@@ -1611,7 +1611,7 @@ const Forms = (() => {
     const del = document.getElementById('btnDeactivate');
     if (del) del.onclick = () => {
       if (confirm('¿Desactivar esta cuenta? Se conserva su historial pero dejará de sumar al balance.')) {
-        Engine.deleteAccount(state, existing.id); persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta desactivada');
+        const idx = state.accounts.findIndex(a => a.id === existing.id); if (idx !== -1) { state.accounts.splice(idx, 1); state.movements = state.movements.filter(m => m.accountId !== existing.id && m.toAccountId !== existing.id); } persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta eliminada');
       }
     };
   }
