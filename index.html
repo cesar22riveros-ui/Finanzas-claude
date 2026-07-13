@@ -1,1661 +1,1687 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Ledger — Finanzas Personales</title>
-<meta name="description" content="Control total de ingresos, gastos, cuotas, cuentas y tarjetas de crédito.">
-<meta name="theme-color" content="#0E1512">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ============================================================
-   LEDGER — Design Tokens
-   Metáfora: el talonario / libro mayor. Barra de color por cuenta,
-   cifras tabulares alineadas a la derecha como en un estado de cuenta real.
-   ============================================================ */
-:root{
-  --paper:#F4F6F4;
-  --paper-raised:#FFFFFF;
-  --ink:#10231B;
-  --ink-soft:#4B5D54;
-  --hairline:#D8DED9;
-  --accent:#2D3A8C;
-  --accent-soft:#E7E9F7;
-  --income:#1B8A5A;
-  --income-soft:#E3F3EA;
-  --expense:#B23A2E;
-  --expense-soft:#FBE9E7;
-  --pending:#C9862A;
-  --pending-soft:#FBEEDD;
-  --radius-s:8px;
-  --radius-m:14px;
-  --radius-l:20px;
-  --shadow:0 1px 2px rgba(16,35,27,.06), 0 8px 24px -12px rgba(16,35,27,.18);
-  --font-display:'Space Grotesk',system-ui,sans-serif;
-  --font-body:'Inter',system-ui,sans-serif;
-  --font-mono:'Roboto Mono',ui-monospace,monospace;
-  color-scheme: light;
-}
-html.dark{
-  --paper:#0E1512;
-  --paper-raised:#16211B;
-  --ink:#E7EFE9;
-  --ink-soft:#94A79C;
-  --hairline:#26362C;
-  --accent:#8C9AFF;
-  --accent-soft:#1E2340;
-  --income:#4FD394;
-  --income-soft:#123626;
-  --expense:#F0776A;
-  --expense-soft:#3A1C18;
-  --pending:#E3AC5C;
-  --pending-soft:#3A2C14;
-  --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 28px -14px rgba(0,0,0,.6);
-  color-scheme: dark;
-}
-*{box-sizing:border-box;}
-html,body{height:100%;}
-body{
-  margin:0;
-  background:var(--paper);
-  color:var(--ink);
-  font-family:var(--font-body);
-  -webkit-font-smoothing:antialiased;
-  transition:background .2s ease, color .2s ease;
-}
-button, input, select, textarea{font-family:inherit;}
-.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-feature-settings:"tnum";}
-h1,h2,h3{font-family:var(--font-display);margin:0;letter-spacing:-.01em;}
-a{color:inherit;}
-::selection{background:var(--accent-soft);}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Nexo Finanzas - PWA de finanzas personales offline-first" />
+  <title>Nexo Finanzas</title>
+  <link rel="manifest" href="./manifest.json" />
+  <style>
+    :root {
+      --bg: #0b1220;
+      --surface: #111827;
+      --surface-2: #172033;
+      --surface-3: #1f2a3d;
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #e5eefb;
+      --muted: #8ea0b9;
+      --primary: #14b8a6;
+      --primary-2: #0f766e;
+      --income: #22c55e;
+      --expense: #f97316;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --info: #38bdf8;
+      --radius: 18px;
+      --radius-sm: 12px;
+      --shadow: 0 12px 30px rgba(0,0,0,.24);
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+      --space-5: 20px; --space-6: 24px; --space-8: 32px;
+      --maxw: 1400px;
+    }
+    [data-theme="light"] {
+      --bg: #f3f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef4fa;
+      --surface-3: #e7eef7;
+      --border: rgba(15, 23, 42, 0.09);
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #0f766e;
+      --primary-2: #14b8a6;
+      --income: #16a34a;
+      --expense: #ea580c;
+      --danger: #dc2626;
+      --warning: #d97706;
+      --info: #0284c7;
+      --shadow: 0 12px 30px rgba(2, 8, 23, .08);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    body { font-variant-numeric: tabular-nums; }
+    button, input, select, textarea { font: inherit; }
 
-/* Focus visibility */
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
-@media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
+    .app { min-height: 100dvh; display: grid; grid-template-columns: 88px 1fr; }
+    .sidebar {
+      position: sticky; top: 0; height: 100dvh;
+      padding: var(--space-4) var(--space-3);
+      background: linear-gradient(180deg, var(--surface), var(--surface-2));
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: var(--space-4);
+    }
+    .brand { display: grid; place-items: center; gap: 10px; }
+    .brand svg { width: 38px; height: 38px; color: var(--primary); }
+    .brand span { font-size: 12px; color: var(--muted); text-align: center; }
 
-/* ============ Layout shell ============ */
-#app{ display:flex; min-height:100%; }
-.sidebar{
-  display:none;
-  width:224px; flex-shrink:0; padding:20px 12px;
-  border-right:1px solid var(--hairline);
-  flex-direction:column; gap:4px;
-}
-.sidebar .brand{ font-family:var(--font-display); font-weight:700; font-size:19px; padding:8px 12px 20px; display:flex; align-items:center; gap:8px;}
-.brand .mark{width:16px;height:16px;border-radius:3px;background:var(--income);flex-shrink:0;}
-.nav-item{
-  display:flex; align-items:center; gap:10px;
-  padding:10px 12px; border-radius:var(--radius-s);
-  font-size:14px; font-weight:500; color:var(--ink-soft);
-  cursor:pointer; border:none; background:none; text-align:left; width:100%;
-}
-.nav-item:hover{ background:var(--paper-raised); }
-.nav-item.active{ background:var(--accent-soft); color:var(--accent); font-weight:600; }
-.nav-item .ic{width:18px;height:18px;flex-shrink:0;}
+    .nav { display: grid; gap: 10px; }
+    .nav-btn, .theme-btn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-radius: 16px;
+      min-height: 52px;
+      display: grid; place-items: center;
+      cursor: pointer;
+    }
+    .nav-btn.active, .nav-btn:hover, .theme-btn:hover {
+      color: var(--text);
+      background: var(--surface-3);
+      border-color: var(--border);
+    }
 
-.main{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.topbar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:16px 20px; border-bottom:1px solid var(--hairline);
-  position:sticky; top:0; background:var(--paper); z-index:5;
-}
-.topbar h1{font-size:20px;}
-.topbar .actions{display:flex; align-items:center; gap:10px;}
-.icon-btn{
-  width:38px;height:38px;border-radius:50%;border:1px solid var(--hairline);
-  background:var(--paper-raised); display:flex;align-items:center;justify-content:center;
-  cursor:pointer; color:var(--ink);
-}
-.icon-btn:hover{border-color:var(--accent);}
-.status-pill{
-  display:flex; align-items:center; gap:6px; font-size:12px; font-weight:500;
-  padding:5px 10px; border-radius:999px; background:var(--paper-raised); border:1px solid var(--hairline); color:var(--ink-soft);
-}
-.status-dot{width:7px;height:7px;border-radius:50%;background:var(--income);}
-.status-pill.offline .status-dot{background:var(--expense);}
+    .main { min-width: 0; }
+    .topbar {
+      position: sticky; top: 0; z-index: 5;
+      backdrop-filter: blur(14px);
+      background: color-mix(in srgb, var(--bg) 78%, transparent);
+      border-bottom: 1px solid var(--border);
+      padding: var(--space-4) var(--space-5);
+      display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+    }
+    .topbar h1 { margin: 0; font-size: clamp(1.15rem, 1rem + 1vw, 1.8rem); }
+    .topbar-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
-.content{ padding:16px 20px 96px; max-width:1080px; width:100%; margin:0 auto; }
+    .pill {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    .status-online { color: var(--income); }
+    .status-offline { color: var(--warning); }
 
-/* Bottom nav (mobile) */
-.bottom-nav{
-  position:fixed; bottom:0; left:0; right:0; z-index:10;
-  display:flex; justify-content:space-around; align-items:center;
-  background:var(--paper-raised); border-top:1px solid var(--hairline);
-  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-  box-shadow:0 -2px 12px rgba(0,0,0,.05);
-}
-.bn-item{
-  display:flex; flex-direction:column; align-items:center; gap:2px;
-  border:none; background:none; color:var(--ink-soft); font-size:10.5px; font-weight:500;
-  padding:6px 8px; border-radius:10px; cursor:pointer; flex:1;
-}
-.bn-item.active{ color:var(--accent); }
-.bn-item .ic{width:21px;height:21px;}
-.fab{
-  position:fixed; right:18px; bottom:74px; z-index:12;
-  width:56px;height:56px;border-radius:50%;
-  background:var(--accent); color:#fff; border:none; box-shadow:var(--shadow);
-  display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:26px;
-}
-@media (min-width: 900px){
-  .sidebar{display:flex;}
-  .bottom-nav{display:none;}
-  .fab{ right:32px; bottom:32px; }
-  .content{padding:24px 32px 48px;}
-}
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--surface-3);
+      color: var(--text);
+    }
+    .btn.primary { background: var(--primary); color: #031817; }
+    .btn.ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+    }
+    .btn.danger {
+      background: var(--danger);
+      color: #fff;
+    }
 
-/* ============ Ledger-stub cards (signature element) ============ */
-.stub{
-  position:relative; background:var(--paper-raised); border-radius:var(--radius-m);
-  border:1px solid var(--hairline); box-shadow:var(--shadow);
-  padding:16px 16px 16px 20px; overflow:hidden;
-}
-.stub::before{
-  content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--bar,var(--accent));
-}
-.stub .label{font-size:12px; color:var(--ink-soft); font-weight:500; text-transform:uppercase; letter-spacing:.04em;}
-.stub .amount{font-family:var(--font-mono); font-size:26px; font-weight:600; margin-top:4px; letter-spacing:-.01em;}
-.stub .amount.neg{color:var(--expense);}
-.stub .amount.pos{color:var(--income);}
-.stub .sub{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+    .content {
+      max-width: var(--maxw);
+      margin: 0 auto;
+      padding: var(--space-5);
+    }
+    .grid { display: grid; gap: var(--space-4); }
+    .grid.kpis { grid-template-columns: repeat(5, minmax(0,1fr)); }
+    .grid.split { grid-template-columns: 1.25fr .95fr; align-items: start; }
+    .grid.cards-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
 
-.grid-2{display:grid; grid-template-columns:1fr; gap:12px;}
-.grid-3{display:grid; grid-template-columns:1fr; gap:12px;}
-@media (min-width:640px){ .grid-2{grid-template-columns:1fr 1fr;} .grid-3{grid-template-columns:repeat(3,1fr);} }
+    .card {
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--surface) 92%, white 8%),
+        var(--surface)
+      );
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: var(--space-4);
+      min-width: 0;
+    }
+    .card h2, .card h3 { margin: 0 0 8px; font-size: 1rem; }
+    .subtle { color: var(--muted); }
 
-.card{
-  background:var(--paper-raised); border:1px solid var(--hairline); border-radius:var(--radius-m);
-  padding:16px; box-shadow:var(--shadow);
-}
-.card-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;}
-.card-head h3{font-size:14px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;}
-.section-title{font-size:15px; font-weight:600; margin:28px 0 12px;}
-.section-title:first-child{margin-top:0;}
+    .kpi-value {
+      font-size: clamp(1.4rem, 1rem + 1.3vw, 2rem);
+      font-weight: 800;
+      margin: 10px 0 4px;
+    }
+    .kpi-foot { color: var(--muted); font-size: 13px; }
 
-/* Ledger row list — hairline-separated, tabular numbers right-aligned */
-.ledger-row{
-  display:flex; align-items:center; gap:12px; padding:11px 2px;
-  border-bottom:1px solid var(--hairline); cursor:pointer;
-}
-.ledger-row:last-child{border-bottom:none;}
-.ledger-row:hover{background:var(--paper);}
-.row-dot{width:8px;height:8px;border-radius:50%; flex-shrink:0;}
-.row-body{flex:1; min-width:0;}
-.row-title{font-size:14px; font-weight:500;}
-.row-sub{font-size:12px; color:var(--ink-soft); margin-top:1px;}
-.row-amount{font-family:var(--font-mono); font-size:14px; font-weight:600; white-space:nowrap;}
-.row-amount.pos{color:var(--income);}
-.row-amount.neg{color:var(--expense);}
-.row-amount.pending{color:var(--pending);}
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
 
-.badge{
-  font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.02em;
-}
-.badge.pending{background:var(--pending-soft); color:var(--pending);}
-.badge.paid{background:var(--income-soft); color:var(--income);}
-.badge.overdue{background:var(--expense-soft); color:var(--expense);}
-.badge.scheduled{background:var(--accent-soft); color:var(--accent);}
+    .accounts-list, .alerts-list, .timeline, .list {
+      display: grid;
+      gap: 10px;
+    }
+    .account-row, .alert-row, .tx-row, .timeline-row {
+      display: grid;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: color-mix(in srgb, var(--surface-2) 78%, transparent);
+      padding: 12px;
+    }
+    .account-row { grid-template-columns: 1fr auto auto; }
+    .tx-row { grid-template-columns: 1.3fr .8fr .8fr .7fr auto; }
+    .timeline-row { grid-template-columns: 1.1fr .8fr .8fr .6fr; }
 
-.empty-state{
-  text-align:center; padding:40px 20px; color:var(--ink-soft);
-}
-.empty-state .ic{font-size:32px; margin-bottom:8px; opacity:.5;}
-.empty-state p{font-size:13px; max-width:280px; margin:4px auto 0;}
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-3);
+    }
 
-.skeleton{ background:linear-gradient(90deg, var(--hairline) 25%, var(--paper) 50%, var(--hairline) 75%); background-size:200% 100%; animation:shimmer 1.3s infinite; border-radius:8px;}
-@keyframes shimmer{ 0%{background-position:200% 0;} 100%{background-position:-200% 0;} }
+    .income { color: var(--income); }
+    .expense { color: var(--expense); }
+    .warning { color: var(--warning); }
+    .danger { color: var(--danger); }
+    .muted { color: var(--muted); }
 
-/* Buttons */
-.btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:6px;
-  font-size:13.5px; font-weight:600; padding:10px 16px; border-radius:var(--radius-s);
-  border:1px solid var(--hairline); background:var(--paper-raised); color:var(--ink); cursor:pointer;
-}
-.btn.primary{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.btn.danger{ background:var(--expense-soft); border-color:transparent; color:var(--expense); }
-.btn.ghost{ border-color:transparent; background:none; }
-.btn.block{width:100%;}
-.btn:disabled{opacity:.5; cursor:not-allowed;}
-.btn-row{display:flex; gap:8px; flex-wrap:wrap;}
+    .progress {
+      height: 10px;
+      background: var(--surface-3);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--info));
+      border-radius: inherit;
+    }
 
-/* Forms */
-.field{ margin-bottom:14px; }
-.field label{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:5px; }
-.field input, .field select, .field textarea{
-  width:100%; padding:11px 12px; border-radius:var(--radius-s); border:1px solid var(--hairline);
-  background:var(--paper); color:var(--ink); font-size:14.5px;
-}
-.field input.num-input{font-family:var(--font-mono); font-weight:600;}
-.field textarea{resize:vertical; min-height:60px;}
-.field-row{display:flex; gap:10px;}
-.field-row > .field{flex:1;}
-.seg{ display:flex; border:1px solid var(--hairline); border-radius:var(--radius-s); overflow:hidden; }
-.seg button{ flex:1; padding:9px 6px; border:none; background:var(--paper-raised); color:var(--ink-soft); font-size:12.5px; font-weight:600; cursor:pointer; border-right:1px solid var(--hairline);}
-.seg button:last-child{border-right:none;}
-.seg button.active{ background:var(--accent); color:#fff; }
-.hint{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+    .chart {
+      height: 280px;
+      display: flex;
+      align-items: end;
+      gap: 8px;
+      padding-top: 18px;
+    }
+    .bar {
+      flex: 1;
+      border-radius: 10px 10px 4px 4px;
+      min-height: 12px;
+      position: relative;
+    }
+    .bar.income {
+      background: color-mix(in srgb, var(--income) 74%, #ffffff 6%);
+    }
+    .bar.expense {
+      background: color-mix(in srgb, var(--expense) 78%, #ffffff 5%);
+    }
+    .bar-label {
+      position: absolute;
+      bottom: -24px;
+      width: 100%;
+      text-align: center;
+      color: var(--muted);
+      font-size: 11px;
+    }
 
-/* Sheet / modal */
-.overlay{
-  position:fixed; inset:0; background:rgba(16,35,27,.45); z-index:50;
-  display:flex; align-items:flex-end; justify-content:center;
-  opacity:0; pointer-events:none; transition:opacity .18s ease;
-}
-.overlay.open{opacity:1; pointer-events:auto;}
-@media (min-width:640px){ .overlay{align-items:center;} }
-.sheet{
-  background:var(--paper-raised); width:100%; max-width:480px; max-height:88vh; overflow-y:auto;
-  border-radius:20px 20px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom));
-  transform:translateY(16px); transition:transform .18s ease;
-}
-.overlay.open .sheet{transform:translateY(0);}
-@media (min-width:640px){ .sheet{border-radius:var(--radius-l); margin-bottom:0;} }
-.sheet-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;}
-.sheet-head h2{font-size:17px;}
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 12px;
+    }
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 13px; color: var(--muted); }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .field textarea { min-height: 90px; resize: vertical; }
+    .span-2 { grid-column: span 2; }
 
-.toast-wrap{position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:80; display:flex; flex-direction:column; gap:8px; width:min(360px,90vw);}
-.toast{ background:var(--ink); color:var(--paper); font-size:13px; font-weight:500; padding:11px 14px; border-radius:var(--radius-s); box-shadow:var(--shadow); display:flex; align-items:center; justify-content:space-between; gap:10px;}
-.toast button{background:none;border:none;color:inherit;font-weight:700;cursor:pointer;opacity:.7;}
+    .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tab {
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .tab.active {
+      background: var(--primary);
+      color: #062221;
+      border-color: transparent;
+    }
 
-.progress-track{height:6px;border-radius:99px;background:var(--hairline);overflow:hidden;}
-.progress-fill{height:100%;background:var(--accent);}
+    .fab {
+      position: fixed;
+      right: 18px;
+      bottom: 84px;
+      width: 58px;
+      height: 58px;
+      border-radius: 999px;
+      border: 0;
+      background: var(--primary);
+      color: #041615;
+      font-size: 28px;
+      box-shadow: var(--shadow);
+      z-index: 10;
+    }
 
-.chip-row{display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; margin-bottom:14px;}
-.chip-row::-webkit-scrollbar{display:none;}
-.chip{ flex-shrink:0; font-size:12.5px; font-weight:600; padding:7px 13px; border-radius:999px; border:1px solid var(--hairline); background:var(--paper-raised); color:var(--ink-soft); cursor:pointer; white-space:nowrap;}
-.chip.active{ background:var(--ink); border-color:var(--ink); color:var(--paper); }
+    .mobile-nav { display: none; }
+    .hidden { display: none !important; }
 
-.bar-chart{display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:10px;}
-.bar-col{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end;}
-.bar-col .bars{display:flex; gap:2px; align-items:flex-end; height:100%; width:100%; justify-content:center;}
-.bar{width:9px; border-radius:3px 3px 0 0;}
-.bar.income{background:var(--income);}
-.bar.expense{background:var(--expense);}
-.bar-col .lbl{font-size:10px; color:var(--ink-soft);}
+    dialog {
+      width: min(760px, calc(100vw - 24px));
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 24px;
+      padding: 0;
+      box-shadow: var(--shadow);
+    }
+    dialog::backdrop {
+      background: rgba(2, 8, 23, .6);
+      backdrop-filter: blur(3px);
+    }
+    .modal-head, .modal-body, .modal-foot { padding: 18px; }
+    .modal-head {
+      border-bottom: 1px solid var(--border);
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modal-foot {
+      border-top: 1px solid var(--border);
+      display:flex; justify-content:flex-end; gap: 10px;
+    }
 
-.cat-bar-row{margin-bottom:12px;}
-.cat-bar-row .top{display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px;}
-.cat-bar-row .top .amt{font-family:var(--font-mono); font-weight:600;}
-.cat-track{height:7px;border-radius:99px;background:var(--hairline);overflow:hidden;}
-.cat-fill{height:100%;border-radius:99px;}
+    .empty {
+      display:grid;
+      gap: 10px;
+      place-items:center;
+      min-height: 180px;
+      color: var(--muted);
+      text-align:center;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+    }
 
-.alert-banner{
-  display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:var(--radius-s);
-  background:var(--pending-soft); border:1px solid transparent; margin-bottom:12px; font-size:13px;
-}
-.alert-banner.danger{background:var(--expense-soft);}
-.alert-banner strong{display:block; font-size:13px; margin-bottom:1px;}
-
-.swatch{width:14px;height:14px;border-radius:4px; flex-shrink:0;}
-.swatch-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
-.swatch-pick{width:26px;height:26px;border-radius:50%; cursor:pointer; border:2px solid transparent;}
-.swatch-pick.active{border-color:var(--ink);}
-
-.divider{height:1px;background:var(--hairline); margin:16px 0;}
-.hidden{display:none !important;}
-.text-soft{color:var(--ink-soft); font-size:13px;}
-</style>
+    @media (max-width: 1100px) {
+      .grid.kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+      .grid.split, .grid.cards-3 { grid-template-columns: 1fr; }
+      .tx-row, .timeline-row, .account-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 780px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .content { padding: 16px 16px 92px; }
+      .mobile-nav {
+        position: fixed;
+        left: 0; right: 0; bottom: 0; z-index: 12;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        background: color-mix(in srgb, var(--surface) 88%, transparent);
+        backdrop-filter: blur(14px);
+        border-top: 1px solid var(--border);
+      }
+      .mobile-nav button {
+        min-height: 52px;
+        border-radius: 14px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--muted);
+      }
+      .mobile-nav button.active {
+        background: var(--surface-3);
+        color: var(--text);
+        border-color: var(--border);
+      }
+      .fab { bottom: 96px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .span-2 { grid-column: span 1; }
+      .topbar { padding: 16px; }
+    }
+  </style>
 </head>
 <body>
-<div id="app"></div>
-<div class="toast-wrap" id="toastWrap"></div>
-<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
-
-<script>
-// ==== js/db.js ====
-/* ============================================================
-   DB — Capa de persistencia y modelo de datos
-   Estrategia: localStorage como almacenamiento offline-first.
-   Todo el estado vive en un único objeto serializado bajo la key
-   'ledger:v1'. Esto simplifica el respaldo/exportación (un solo
-   blob JSON) y deja la puerta abierta a reemplazar esta capa por
-   IndexedDB o sincronización remota sin tocar el resto de la app:
-   basta con reimplementar DB.load()/DB.save().
-
-   Entidades:
-   - accounts:   cuentas (débito, efectivo, ahorro, crédito, etc.)
-   - categories: categorías/subcategorías de movimientos
-   - movements:  todo movimiento (ingreso, gasto, transferencia, pago tarjeta, ajuste)
-   - installmentPlans: compras en cuotas y su calendario
-   - scheduled:  gastos programados/recurrentes
-   ============================================================ */
-
-const DB = (() => {
-  const KEY = 'ledger:v1';
-
-  function uid(prefix) {
-    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-  }
-
-  function todayISO() {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  function seed() {
-    const accounts = [
-      { id: uid('acc'), name: 'Cuenta Corriente', type: 'corriente', initialBalance: 850000, currentBalance: 850000, currency: 'CLP', color: '#2D3A8C', active: true },
-      { id: uid('acc'), name: 'Efectivo', type: 'efectivo', initialBalance: 45000, currentBalance: 45000, currency: 'CLP', color: '#1B8A5A', active: true },
-      { id: uid('acc'), name: 'Ahorro', type: 'ahorro', initialBalance: 1200000, currentBalance: 1200000, currency: 'CLP', color: '#C9862A', active: true },
-    ];
-    const card = {
-      id: uid('acc'), name: 'Tarjeta Visa', type: 'credito', initialBalance: 0, currentBalance: 0,
-      currency: 'CLP', color: '#B23A2E', active: true,
-      creditLimit: 900000, usedCredit: 0, billingDay: 5, dueDay: 15
-    };
-    accounts.push(card);
-
-    const categories = [
-      { id: uid('cat'), name: 'Alimentación', kind: 'expense', color: '#B23A2E' },
-      { id: uid('cat'), name: 'Transporte', kind: 'expense', color: '#C9862A' },
-      { id: uid('cat'), name: 'Hogar', kind: 'expense', color: '#8C6BB1' },
-      { id: uid('cat'), name: 'Salud', kind: 'expense', color: '#3E8FB0' },
-      { id: uid('cat'), name: 'Educación', kind: 'expense', color: '#4E7A51' },
-      { id: uid('cat'), name: 'Suscripciones', kind: 'expense', color: '#B0559A' },
-      { id: uid('cat'), name: 'Ocio', kind: 'expense', color: '#D4A24C' },
-      { id: uid('cat'), name: 'Deudas', kind: 'expense', color: '#7A3E3E' },
-      { id: uid('cat'), name: 'Otros', kind: 'expense', color: '#6B7A72' },
-      { id: uid('cat'), name: 'Sueldo', kind: 'income', color: '#1B8A5A' },
-      { id: uid('cat'), name: 'Ingreso extra', kind: 'income', color: '#3E8F6E' },
-      { id: uid('cat'), name: 'Ahorro', kind: 'transfer', color: '#2D3A8C' },
-    ];
-    const catByName = Object.fromEntries(categories.map(c => [c.name, c.id]));
-
-    const state = {
-      accounts, categories,
-      movements: [],
-      installmentPlans: [],
-      scheduled: [],
-      settings: { theme: 'light', currency: 'CLP', locale: 'es-CL', lockEnabled: false, onboarded: true },
-      meta: { version: 1, createdAt: todayISO() }
-    };
-
-    // Movimientos de ejemplo del mes actual
-    const cash = accounts[0];
-    Engine.applyIncome(state, { accountId: cash.id, amount: 1450000, categoryId: catByName['Sueldo'], description: 'Sueldo mensual', date: todayISO() });
-    Engine.applyExpense(state, { accountId: cash.id, amount: 32000, categoryId: catByName['Alimentación'], description: 'Supermercado', date: todayISO() });
-    Engine.applyExpense(state, { accountId: accounts[1].id, amount: 6500, categoryId: catByName['Transporte'], description: 'Bencina / bus', date: todayISO() });
-    Engine.applyTransfer(state, { fromId: cash.id, toId: accounts[2].id, amount: 100000, description: 'Aporte ahorro mensual', date: todayISO() });
-    Engine.applyInstallmentPurchase(state, {
-      cardId: card.id, totalAmount: 240000, installmentsCount: 6,
-      categoryId: catByName['Hogar'], description: 'Refrigerador', purchaseDate: todayISO()
-    });
-
-    state.scheduled.push(
-      { id: uid('sch'), name: 'Arriendo', amount: 380000, categoryId: catByName['Hogar'], accountId: cash.id, frequency: 'monthly', dayOfMonth: 5, nextDate: nextMonthlyDate(5), status: 'pending', paused: false },
-      { id: uid('sch'), name: 'Internet', amount: 24990, categoryId: catByName['Suscripciones'], accountId: cash.id, frequency: 'monthly', dayOfMonth: 12, nextDate: nextMonthlyDate(12), status: 'pending', paused: false },
-      { id: uid('sch'), name: 'Plan celular', amount: 15990, categoryId: catByName['Suscripciones'], accountId: cash.id, frequency: 'monthly', dayOfMonth: 20, nextDate: nextMonthlyDate(20), status: 'pending', paused: false }
-    );
-
-    return state;
-  }
-
-  function nextMonthlyDate(day) {
-    const now = new Date();
-    let y = now.getFullYear(), m = now.getMonth();
-    if (now.getDate() >= day) { m += 1; }
-    const d = new Date(y, m, day);
-    return d.toISOString().slice(0, 10);
-  }
-
-  function load() {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (!raw) {
-        const s = seed();
-        save(s);
-        return s;
-      }
-      return JSON.parse(raw);
-    } catch (e) {
-      console.error('DB.load error, reiniciando datos', e);
-      const s = seed();
-      save(s);
-      return s;
-    }
-  }
-
-  function save(state) {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-      return true;
-    } catch (e) {
-      console.error('DB.save error', e);
-      return false;
-    }
-  }
-
-  function exportCSV(state) {
-    const rows = [['Fecha', 'Tipo', 'Cuenta', 'Categoría', 'Descripción', 'Monto', 'Estado']];
-    state.movements.forEach(m => {
-      const acc = state.accounts.find(a => a.id === m.accountId);
-      const cat = state.categories.find(c => c.id === m.categoryId);
-      rows.push([m.date, m.type, acc ? acc.name : '', cat ? cat.name : '', m.description || '', m.amount, m.status || 'paid']);
-    });
-    return rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
-  }
-
-  function resetAll() {
-    localStorage.removeItem(KEY);
-    return load();
-  }
-
-  return { uid, todayISO, nextMonthlyDate, seed, load, save, exportCSV, resetAll };
-})();
-
-// ==== js/calc.js ====
-/* ============================================================
-   ENGINE — Reglas de negocio (la única fuente de verdad sobre
-   cómo un movimiento afecta saldos y cupos). Ningún componente de
-   UI debe tocar account.currentBalance o usedCredit directamente:
-   todo pasa por aquí para evitar inconsistencias.
-
-   REGLAS:
-   1. Ingreso            -> += saldo cuenta destino.
-   2. Gasto (cuenta no-crédito) -> -= saldo cuenta.
-   3. Compra con tarjeta (1 o N cuotas) -> NO toca el saldo de ninguna
-      cuenta de efectivo (no es un flujo de caja hoy). Aumenta usedCredit
-      de la tarjeta en el monto total de la compra (deuda total generada)
-      y genera un calendario de cuotas. usedCredit = deuda viva total,
-      no solo lo facturado: así "cupo disponible" refleja lo que
-      realmente queda para comprar, incluso con cuotas futuras.
-   4. Pago de tarjeta -> -= saldo de la cuenta que paga, y -= usedCredit
-      de la tarjeta en el monto pagado (se van saldando cuotas en orden).
-   5. Transferencia entre cuentas propias -> -= origen, += destino.
-      Se marca type:'transfer' y SIEMPRE se excluye de los totales de
-      ingresos/gastos consolidados (si no, el dinero se contaría dos
-      veces: una al "gastarse" de una cuenta y otra al "ingresar" a la otra).
-   6. Ajuste de saldo -> fija el saldo a un valor manual y registra la
-      diferencia como movimiento 'adjustment' (para trazabilidad).
-   7. Gasto programado pagado -> se comporta como un Gasto (regla 2) y
-      además avanza next Date según la frecuencia.
-
-   BALANCE DISPONIBLE REAL vs BALANCE CONTABLE:
-   - Balance contable = suma de saldos actuales de cuentas de efectivo
-     (no incluye tarjetas de crédito: su "saldo" es deuda, no activo).
-   - Disponible real = Balance contable
-       − gastos programados con vencimiento en los próximos 7 días
-       − cuotas de tarjeta que facturan este mes y siguen sin pagar
-     Esto evita que el usuario vea saldo "libre" que en realidad ya
-     está comprometido con pagos que vienen.
-   ============================================================ */
-
-const Engine = (() => {
-  function round(n) { return Math.round(n); }
-
-  function findAccount(state, id) { return state.accounts.find(a => a.id === id); }
-
-  function pushMovement(state, mv) {
-    mv.id = DB.uid('mov');
-    mv.recordedDate = DB.todayISO();
-    state.movements.push(mv);
-    return mv;
-  }
-
-  function applyIncome(state, { accountId, amount, categoryId, description, date, tags }) {
-    const acc = findAccount(state, accountId);
-    acc.currentBalance += amount;
-    return pushMovement(state, {
-      type: 'income', amount, accountId, categoryId, description: description || '',
-      date: date || DB.todayISO(), status: 'paid', tags: tags || []
-    });
-  }
-
-  function applyExpense(state, { accountId, amount, categoryId, description, date, tags }) {
-    const acc = findAccount(state, accountId);
-    if (acc.type === 'credito') throw new Error('Usa applyInstallmentPurchase para gastos con tarjeta de crédito.');
-    acc.currentBalance -= amount;
-    return pushMovement(state, {
-      type: 'expense', amount, accountId, categoryId, description: description || '',
-      date: date || DB.todayISO(), status: 'paid', tags: tags || []
-    });
-  }
-
-  function applyTransfer(state, { fromId, toId, amount, description, date }) {
-    if (fromId === toId) throw new Error('La cuenta origen y destino no pueden ser la misma.');
-    const from = findAccount(state, fromId), to = findAccount(state, toId);
-    from.currentBalance -= amount;
-    to.currentBalance += amount;
-    return pushMovement(state, {
-      type: 'transfer', amount, accountId: fromId, toAccountId: toId,
-      description: description || '', date: date || DB.todayISO(), status: 'paid'
-    });
-  }
-
-  function applyInstallmentPurchase(state, { cardId, totalAmount, installmentsCount, categoryId, description, purchaseDate }) {
-    const card = findAccount(state, cardId);
-    const n = Math.max(1, installmentsCount);
-    const base = Math.floor(totalAmount / n);
-    const remainder = totalAmount - base * n;
-    const pDate = purchaseDate || DB.todayISO();
-    const installments = [];
-    for (let i = 0; i < n; i++) {
-      const due = addMonths(pDate, i + 1);
-      installments.push({
-        n: i + 1,
-        amount: base + (i === n - 1 ? remainder : 0),
-        dueDate: due,
-        status: 'pending'
-      });
-    }
-    const plan = {
-      id: DB.uid('plan'), cardId, totalAmount, installmentsCount: n,
-      categoryId, description: description || '', purchaseDate: pDate, installments
-    };
-    state.installmentPlans.push(plan);
-    card.usedCredit = (card.usedCredit || 0) + totalAmount;
-
-    pushMovement(state, {
-      type: 'expense', subtype: 'installment_purchase', amount: totalAmount, accountId: cardId,
-      categoryId, description: description || '', date: pDate, status: n === 1 ? 'scheduled' : 'scheduled',
-      installments: n, planId: plan.id, isCredit: true
-    });
-    return plan;
-  }
-
-  function addMonths(iso, months) {
-    const d = new Date(iso + 'T00:00:00');
-    d.setMonth(d.getMonth() + months);
-    return d.toISOString().slice(0, 10);
-  }
-
-  // Paga la(s) próxima(s) cuota(s) pendiente(s) de un plan, debitando accountId (cuenta que paga)
-  function payInstallments(state, { planId, accountId, count = 1 }) {
-    const plan = state.installmentPlans.find(p => p.id === planId);
-    const card = findAccount(state, plan.cardId);
-    const payer = findAccount(state, accountId);
-    const pending = plan.installments.filter(i => i.status === 'pending').sort((a, b) => a.n - b.n);
-    const toPay = pending.slice(0, count);
-    if (!toPay.length) return null;
-    const total = toPay.reduce((s, i) => s + i.amount, 0);
-    toPay.forEach(i => { i.status = 'paid'; i.paidDate = DB.todayISO(); });
-    payer.currentBalance -= total;
-    card.usedCredit = Math.max(0, (card.usedCredit || 0) - total);
-    return pushMovement(state, {
-      type: 'card_payment', amount: total, accountId, toAccountId: plan.cardId,
-      description: `Pago cuota${toPay.length > 1 ? 's' : ''} — ${plan.description}`,
-      date: DB.todayISO(), status: 'paid', planId
-    });
-  }
-
-  function payFullPlan(state, { planId, accountId }) {
-    const plan = state.installmentPlans.find(p => p.id === planId);
-    const pendingCount = plan.installments.filter(i => i.status === 'pending').length;
-    return payInstallments(state, { planId, accountId, count: pendingCount });
-  }
-
-  function markScheduledPaid(state, schedId, accountId) {
-    const sch = state.scheduled.find(s => s.id === schedId);
-    const acc = findAccount(state, accountId || sch.accountId);
-    acc.currentBalance -= sch.amount;
-    pushMovement(state, {
-      type: 'expense', subtype: 'scheduled', amount: sch.amount, accountId: acc.id,
-      categoryId: sch.categoryId, description: sch.name, date: DB.todayISO(), status: 'paid', schedId
-    });
-    sch.lastPaidDate = DB.todayISO();
-    sch.nextDate = advanceDate(sch.nextDate, sch.frequency, sch.dayOfMonth);
-    return sch;
-  }
-
-  function advanceDate(iso, frequency, dayOfMonth) {
-    const d = new Date(iso + 'T00:00:00');
-    if (frequency === 'weekly') d.setDate(d.getDate() + 7);
-    else if (frequency === 'monthly') { d.setMonth(d.getMonth() + 1); if (dayOfMonth) d.setDate(dayOfMonth); }
-    else d.setMonth(d.getMonth() + 1);
-    return d.toISOString().slice(0, 10);
-  }
-
-  function applyAdjustment(state, { accountId, newBalance, note }) {
-    const acc = findAccount(state, accountId);
-    const diff = newBalance - acc.currentBalance;
-    acc.currentBalance = newBalance;
-    return pushMovement(state, {
-      type: 'adjustment', amount: diff, accountId, description: note || 'Ajuste de saldo',
-      date: DB.todayISO(), status: 'paid'
-    });
-  }
-
-  function deleteMovement(state, movId) {
-    const idx = state.movements.findIndex(m => m.id === movId);
-    if (idx === -1) return false;
-    const mv = state.movements[idx];
-    // Revertir efecto en saldos para mantener consistencia
-    if (mv.type === 'income') findAccount(state, mv.accountId).currentBalance -= mv.amount;
-    else if (mv.type === 'expense' && !mv.isCredit) findAccount(state, mv.accountId).currentBalance += mv.amount;
-    else if (mv.type === 'transfer') {
-      findAccount(state, mv.accountId).currentBalance += mv.amount;
-      findAccount(state, mv.toAccountId).currentBalance -= mv.amount;
-    } else if (mv.type === 'adjustment') {
-      findAccount(state, mv.accountId).currentBalance -= mv.amount;
-    }
-    state.movements.splice(idx, 1);
-    return true;
-  }
-
-  function deleteAccount(state, accountId) {
-    const acc = findAccount(state, accountId);
-    state.accounts = state.accounts.filter(a => a.id !== accountId);
-  }
-
-  return {
-    applyIncome, applyExpense, applyTransfer, applyInstallmentPurchase,
-    payInstallments, payFullPlan, markScheduledPaid, applyAdjustment,
-    deleteMovement, deleteAccount, addMonths, advanceDate
-  };
-})();
-
-/* ============================================================
-   CALC — Agregaciones para dashboard y reportes (solo lectura)
-   ============================================================ */
-const Calc = (() => {
-  const fmt = (n, currency = 'CLP') => {
-    try { return new Intl.NumberFormat('es-CL', { style: 'currency', currency, maximumFractionDigits: 0 }).format(n || 0); }
-    catch (e) { return '$' + Math.round(n || 0).toLocaleString('es-CL'); }
-  };
-
-  function cashAccounts(state) { return state.accounts.filter(a => a.type !== 'credito' && a.active); }
-  function creditAccounts(state) { return state.accounts.filter(a => a.type === 'credito' && a.active); }
-
-  function balanceTotal(state) { return cashAccounts(state).reduce((s, a) => s + a.currentBalance, 0); }
-
-  function scheduledDueWithin(state, days) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const limit = new Date(today); limit.setDate(limit.getDate() + days);
-    return state.scheduled.filter(s => !s.paused && new Date(s.nextDate) >= today && new Date(s.nextDate) <= limit);
-  }
-
-  function installmentsDueThisMonthUnpaid(state) {
-    const now = new Date(); const ym = now.toISOString().slice(0, 7);
-    let list = [];
-    state.installmentPlans.forEach(p => {
-      p.installments.forEach(i => {
-        if (i.status === 'pending' && i.dueDate.slice(0, 7) === ym) list.push({ plan: p, inst: i });
-      });
-    });
-    return list;
-  }
-
-  function disponibleReal(state) {
-    const total = balanceTotal(state);
-    const prox = scheduledDueWithin(state, 7).reduce((s, x) => s + x.amount, 0);
-    const cuotasMes = installmentsDueThisMonthUnpaid(state).reduce((s, x) => s + x.inst.amount, 0);
-    return total - prox - cuotasMes;
-  }
-
-  function movementsOn(state, dateISO) { return state.movements.filter(m => m.date === dateISO); }
-
-  function todayFlows(state) {
-    const t = DB.todayISO();
-    const list = movementsOn(state, t);
-    const ingresos = list.filter(m => m.type === 'income').reduce((s, m) => s + m.amount, 0);
-    const gastos = list.filter(m => m.type === 'expense' && !m.isCredit).reduce((s, m) => s + m.amount, 0);
-    return { ingresos, gastos };
-  }
-
-  function monthFlows(state, monthsAgo = 0) {
-    const d = new Date(); d.setMonth(d.getMonth() - monthsAgo);
-    const ym = d.toISOString().slice(0, 7);
-    const list = state.movements.filter(m => m.date.slice(0, 7) === ym);
-    const ingresos = list.filter(m => m.type === 'income').reduce((s, m) => s + m.amount, 0);
-    const gastos = list.filter(m => m.type === 'expense' && !m.isCredit).reduce((s, m) => s + m.amount, 0);
-    return { ym, ingresos, gastos, neto: ingresos - gastos };
-  }
-
-  function gastosPorCategoria(state, monthsAgo = 0) {
-    const d = new Date(); d.setMonth(d.getMonth() - monthsAgo);
-    const ym = d.toISOString().slice(0, 7);
-    const list = state.movements.filter(m => m.date.slice(0, 7) === ym && m.type === 'expense' && !m.isCredit);
-    const byCat = {};
-    list.forEach(m => { byCat[m.categoryId] = (byCat[m.categoryId] || 0) + m.amount; });
-    return Object.entries(byCat)
-      .map(([catId, total]) => ({ cat: state.categories.find(c => c.id === catId), total }))
-      .filter(x => x.cat)
-      .sort((a, b) => b.total - a.total);
-  }
-
-  function totalDeudaTarjetas(state) { return creditAccounts(state).reduce((s, a) => s + (a.usedCredit || 0), 0); }
-  function cupoDisponible(a) { return Math.max(0, (a.creditLimit || 0) - (a.usedCredit || 0)); }
-  function pctUsado(a) { return a.creditLimit ? Math.min(100, Math.round(((a.usedCredit || 0) / a.creditLimit) * 100)) : 0; }
-
-  function proximosVencimientos(state, days = 14) {
-    const sch = scheduledDueWithin(state, days).map(s => ({
-      kind: 'scheduled', date: s.nextDate, name: s.name, amount: s.amount, ref: s
-    }));
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const limit = new Date(today); limit.setDate(limit.getDate() + days);
-    const inst = [];
-    state.installmentPlans.forEach(p => p.installments.forEach(i => {
-      if (i.status === 'pending' && new Date(i.dueDate) >= today && new Date(i.dueDate) <= limit) {
-        inst.push({ kind: 'installment', date: i.dueDate, name: `${p.description} (cuota ${i.n}/${p.installmentsCount})`, amount: i.amount, ref: p });
-      }
-    }));
-    return [...sch, ...inst].sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  function alerts(state) {
-    const out = [];
-    cashAccounts(state).forEach(a => {
-      if (a.currentBalance < 15000) out.push({ level: 'warn', text: `Saldo bajo en ${a.name}: ${fmt(a.currentBalance)}` });
-    });
-    creditAccounts(state).forEach(a => {
-      if (pctUsado(a) >= 85) out.push({ level: 'danger', text: `${a.name} usa ${pctUsado(a)}% del cupo disponible` });
-    });
-    proximosVencimientos(state, 3).forEach(v => {
-      out.push({ level: 'warn', text: `${v.name} vence el ${v.date} — ${fmt(v.amount)}` });
-    });
-    return out;
-  }
-
-  function lastMovements(state, n = 8) {
-    return [...state.movements].sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id)).slice(0, n);
-  }
-
-  function last6MonthsFlow(state) {
-    const out = [];
-    for (let i = 5; i >= 0; i--) out.push(monthFlows(state, i));
-    return out;
-  }
-
-  return {
-    fmt, cashAccounts, creditAccounts, balanceTotal, disponibleReal, scheduledDueWithin,
-    installmentsDueThisMonthUnpaid, todayFlows, monthFlows, gastosPorCategoria,
-    totalDeudaTarjetas, cupoDisponible, pctUsado, proximosVencimientos, alerts,
-    lastMovements, last6MonthsFlow
-  };
-})();
-
-// ==== js/ui.js ====
-/* ============================================================
-   UI — toasts, sheets (modal inferior), iconografía y helpers
-   ============================================================ */
-const UI = (() => {
-  const ICONS = {
-    home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"/>',
-    list: '<path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.3"/><circle cx="3.5" cy="12" r="1.3"/><circle cx="3.5" cy="18" r="1.3"/>',
-    wallet: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><circle cx="16.5" cy="14" r="1.2"/>',
-    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v4M16 3v4"/>',
-    chart: '<path d="M4 20V10M11 20V4M18 20v-7"/><path d="M2 20h20"/>',
-    settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.7 7.7 0 0 0 0-3l2-1.5-2-3.4-2.3.9a7.6 7.6 0 0 0-2.6-1.5L14 2.5h-4l-.5 2.5a7.6 7.6 0 0 0-2.6 1.5l-2.3-.9-2 3.4 2 1.5a7.7 7.7 0 0 0 0 3l-2 1.5 2 3.4 2.3-.9c.77.66 1.65 1.17 2.6 1.5l.5 2.5h4l.5-2.5a7.6 7.6 0 0 0 2.6-1.5l2.3.9 2-3.4-2-1.5Z"/>',
-    plus: '<path d="M12 5v14M5 12h14"/>',
-    close: '<path d="M6 6l12 12M18 6 6 18"/>',
-    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-    trash: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
-    up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
-    down: '<path d="M12 5v14M5 12l7 7 7-7"/>',
-    swap: '<path d="M7 3 3 7l4 4"/><path d="M3 7h13a4 4 0 0 1 4 4v1"/><path d="M17 21l4-4-4-4"/><path d="M21 17H8a4 4 0 0 1-4-4v-1"/>',
-    card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
-    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
-    moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/>',
-    wifiOff: '<path d="M1 9l2 2a15 15 0 0 1 5-3.3M23 9l-2 2a15 15 0 0 0-3-2.2M8.5 16.5a7 7 0 0 1 7 0M12 20h.01M1 1l22 22"/>',
-    check: '<path d="M20 6 9 17l-5-5"/>',
-    chevron: '<path d="M9 6l6 6-6 6"/>',
-    dot: '<circle cx="12" cy="12" r="10"/>',
-    reset: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
-    download: '<path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/>',
-    lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
-  };
-  function icon(name, cls = 'ic') {
-    return `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name] || ''}</svg>`;
-  }
-
-  function toast(msg, opts = {}) {
-    const wrap = document.getElementById('toastWrap');
-    const el = document.createElement('div');
-    el.className = 'toast';
-    el.innerHTML = `<span>${msg}</span>`;
-    const closeBtn = document.createElement('button');
-    closeBtn.innerHTML = '✕';
-    closeBtn.onclick = () => el.remove();
-    el.appendChild(closeBtn);
-    if (opts.undo) {
-      const undoBtn = document.createElement('button');
-      undoBtn.textContent = 'Deshacer';
-      undoBtn.style.textDecoration = 'underline';
-      undoBtn.onclick = () => { opts.undo(); el.remove(); };
-      el.insertBefore(undoBtn, closeBtn);
-    }
-    wrap.appendChild(el);
-    setTimeout(() => el.remove(), opts.duration || 4000);
-  }
-
-  function openSheet(html, onOpen) {
-    const overlay = document.getElementById('overlay');
-    const sheet = document.getElementById('sheet');
-    sheet.innerHTML = html;
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    if (onOpen) onOpen(sheet);
-    overlay.onclick = (e) => { if (e.target === overlay) closeSheet(); };
-  }
-  function closeSheet() {
-    document.getElementById('overlay').classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  function fmtDateHuman(iso) {
-    if (!iso) return '';
-    const d = new Date(iso + 'T00:00:00');
-    return d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' });
-  }
-
-  function daysUntil(iso) {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const d = new Date(iso + 'T00:00:00');
-    return Math.round((d - today) / 86400000);
-  }
-
-  function el(html) {
-    const t = document.createElement('template');
-    t.innerHTML = html.trim();
-    return t.content.firstElementChild;
-  }
-
-  return { icon, toast, openSheet, closeSheet, fmtDateHuman, daysUntil, el };
-})();
-
-// ==== js/views.js ====
-/* ============================================================
-   VIEWS — Renderizado de cada pantalla (funciones puras: state -> html)
-   ============================================================ */
-const Views = (() => {
-  const { icon, fmtDateHuman, daysUntil } = UI;
-  const fmt = Calc.fmt;
-
-  function typeMeta(m) {
-    if (m.type === 'income') return { ic: 'up', cls: 'pos', sign: '+' };
-    if (m.type === 'transfer') return { ic: 'swap', cls: '', sign: '' };
-    if (m.type === 'card_payment') return { ic: 'card', cls: '', sign: '' };
-    if (m.type === 'adjustment') return { ic: 'edit', cls: '', sign: '' };
-    return { ic: 'down', cls: 'neg', sign: '−' };
-  }
-
-  function movementRow(state, m) {
-    const acc = state.accounts.find(a => a.id === m.accountId);
-    const cat = state.categories.find(c => c.id === m.categoryId);
-    const meta = typeMeta(m);
-    const statusBadge = m.status === 'scheduled'
-      ? `<span class="badge scheduled">Programado</span>`
-      : '';
-    return `<div class="ledger-row" data-mov="${m.id}">
-      <div class="row-dot" style="background:${acc ? acc.color : '#999'}"></div>
-      <div class="row-body">
-        <div class="row-title">${m.description || (cat ? cat.name : typeLabel(m.type))}</div>
-        <div class="row-sub">${fmtDateHuman(m.date)} · ${acc ? acc.name : ''}${cat ? ' · ' + cat.name : ''} ${statusBadge}</div>
+  <div class="app">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" fill="none" aria-label="Nexo Finanzas logo">
+          <rect x="10" y="10" width="44" height="44" rx="14" stroke="currentColor" stroke-width="4"></rect>
+          <path d="M18 42V22l12 12 16-16v24"
+                stroke="currentColor" stroke-width="5"
+                stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>Nexo<br>Finanzas</span>
       </div>
-      <div class="row-amount ${meta.cls}">${meta.sign}${fmt(m.amount, acc ? acc.currency : 'CLP')}</div>
-    </div>`;
-  }
+      <nav class="nav" id="sidebarNav"></nav>
+      <button class="theme-btn" id="themeToggle" aria-label="Cambiar tema">◐</button>
+    </aside>
 
-  function typeLabel(t) {
-    return { income: 'Ingreso', expense: 'Gasto', transfer: 'Transferencia', card_payment: 'Pago tarjeta', adjustment: 'Ajuste' }[t] || t;
-  }
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="screenTitle">Inicio</h1>
+          <div class="subtle">Control total del dinero, deuda y flujo real</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="pill" id="connectionState">Conectado</span>
+          <button class="btn ghost" id="seedBtn">Cargar ejemplo</button>
+          <button class="btn ghost" id="exportBtn">Exportar JSON</button>
+          <button class="btn primary" id="newMovementBtn">+ Nuevo movimiento</button>
+        </div>
+      </header>
+      <div class="content" id="appContent"></div>
+    </main>
+  </div>
 
-  /* ---------------- DASHBOARD ---------------- */
-  function dashboard(state) {
-    const total = Calc.balanceTotal(state);
-    const disp = Calc.disponibleReal(state);
-    const { ingresos, gastos } = Calc.todayFlows(state);
-    const mes = Calc.monthFlows(state);
-    const cash = Calc.cashAccounts(state);
-    const cards = Calc.creditAccounts(state);
-    const proximos = Calc.proximosVencimientos(state, 14).slice(0, 5);
-    const alerts = Calc.alerts(state);
-    const last = Calc.lastMovements(state, 6);
+  <nav class="mobile-nav" id="mobileNav" aria-label="Navegación móvil"></nav>
+  <button class="fab" id="fabBtn" aria-label="Nuevo movimiento">+</button>
 
-    return `
-    <div class="grid-2" style="margin-bottom:12px;">
-      <div class="stub" style="--bar:var(--accent)">
-        <div class="label">Balance total</div>
-        <div class="amount num">${fmt(total)}</div>
-        <div class="sub">Suma de cuentas de efectivo, débito y ahorro</div>
+  <dialog id="movementDialog">
+    <form method="dialog" id="movementForm">
+      <div class="modal-head">
+        <div>
+          <strong>Registrar movimiento</strong>
+          <div class="subtle">Ingreso, gasto, transferencia, tarjeta, ajuste o pago</div>
+        </div>
+        <button class="btn ghost" value="cancel">Cerrar</button>
       </div>
-      <div class="stub" style="--bar:${disp >= 0 ? 'var(--income)' : 'var(--expense)'}">
-        <div class="label">Disponible real</div>
-        <div class="amount num ${disp < 0 ? 'neg' : ''}">${fmt(disp)}</div>
-        <div class="sub">Descontando cuotas y pagos próximos a 7 días</div>
-      </div>
-    </div>
-
-    ${alerts.length ? `<div>${alerts.slice(0, 3).map(a => `<div class="alert-banner ${a.level === 'danger' ? 'danger' : ''}"><strong>${a.level === 'danger' ? '⚠ Atención' : 'Aviso'}</strong>${a.text}</div>`).join('')}</div>` : ''}
-
-    <div class="grid-3" style="margin-bottom:8px;">
-      <div class="card"><div class="label" style="font-size:11.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;">Ingresos hoy</div><div class="num" style="font-size:18px;font-weight:600;color:var(--income);margin-top:4px;">${fmt(ingresos)}</div></div>
-      <div class="card"><div class="label" style="font-size:11.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;">Gastos hoy</div><div class="num" style="font-size:18px;font-weight:600;color:var(--expense);margin-top:4px;">${fmt(gastos)}</div></div>
-      <div class="card"><div class="label" style="font-size:11.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;">Flujo neto del mes</div><div class="num" style="font-size:18px;font-weight:600;color:${mes.neto >= 0 ? 'var(--income)' : 'var(--expense)'};margin-top:4px;">${fmt(mes.neto)}</div></div>
-    </div>
-
-    <div class="section-title">Cuentas</div>
-    <div class="grid-2">
-      ${cash.map(a => `
-        <div class="stub" style="--bar:${a.color}">
-          <div class="label">${a.name}</div>
-          <div class="amount num" style="font-size:19px;">${fmt(a.currentBalance, a.currency)}</div>
-        </div>`).join('')}
-    </div>
-
-    ${cards.length ? `<div class="section-title">Tarjetas de crédito</div>` : ''}
-    ${cards.map(a => `
-      <div class="card" style="margin-bottom:10px;">
-        <div class="card-head" style="margin-bottom:8px;"><h3 style="text-transform:none;color:var(--ink);font-size:14.5px;">${a.name}</h3><span class="text-soft">${Calc.pctUsado(a)}% usado</span></div>
-        <div class="progress-track"><div class="progress-fill" style="width:${Calc.pctUsado(a)}%;background:${Calc.pctUsado(a) >= 85 ? 'var(--expense)' : 'var(--accent)'}"></div></div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:12.5px;color:var(--ink-soft);">
-          <span>Usado: <b class="num" style="color:var(--ink)">${fmt(a.usedCredit || 0)}</b></span>
-          <span>Disponible: <b class="num" style="color:var(--ink)">${fmt(Calc.cupoDisponible(a))}</b></span>
-        </div>
-      </div>`).join('')}
-
-    <div class="section-title">Próximos vencimientos</div>
-    <div class="card">
-      ${proximos.length ? proximos.map(v => `
-        <div class="ledger-row">
-          <div class="row-dot" style="background:${daysUntil(v.date) <= 2 ? 'var(--expense)' : 'var(--pending)'}"></div>
-          <div class="row-body"><div class="row-title">${v.name}</div><div class="row-sub">${fmtDateHuman(v.date)} · ${daysUntil(v.date) === 0 ? 'hoy' : daysUntil(v.date) + ' días'}</div></div>
-          <div class="row-amount pending num">${fmt(v.amount)}</div>
-        </div>`).join('') : emptyState('calendar', 'Sin vencimientos próximos', 'Los gastos programados y cuotas por vencer aparecerán aquí.')}
-    </div>
-
-    <div class="section-title">Últimos movimientos</div>
-    <div class="card">
-      ${last.length ? last.map(m => movementRow(state, m)).join('') : emptyState('list', 'Aún no hay movimientos', 'Registra tu primer ingreso o gasto con el botón +.')}
-    </div>
-    `;
-  }
-
-  function emptyState(ic, title, sub) {
-    return `<div class="empty-state"><div class="ic">${icon(ic)}</div><div style="font-weight:600;font-size:13.5px;">${title}</div><p>${sub}</p></div>`;
-  }
-
-  /* ---------------- MOVIMIENTOS ---------------- */
-  function movementsView(state, filter = {}) {
-    let list = [...state.movements].sort((a, b) => (b.date + b.id).localeCompare(a.date + a.id));
-    if (filter.type) list = list.filter(m => m.type === filter.type);
-    if (filter.accountId) list = list.filter(m => m.accountId === filter.accountId || m.toAccountId === filter.accountId);
-    if (filter.q) {
-      const q = filter.q.toLowerCase();
-      list = list.filter(m => (m.description || '').toLowerCase().includes(q));
-    }
-    const chips = [
-      { key: '', label: 'Todos' }, { key: 'income', label: 'Ingresos' }, { key: 'expense', label: 'Gastos' },
-      { key: 'transfer', label: 'Transferencias' }, { key: 'card_payment', label: 'Pagos tarjeta' }
-    ];
-    const grouped = {};
-    list.forEach(m => { (grouped[m.date] = grouped[m.date] || []).push(m); });
-
-    return `
-    <div class="field" style="margin-bottom:10px;">
-      <input id="movSearch" type="text" placeholder="Buscar movimientos…" value="${filter.q || ''}">
-    </div>
-    <div class="chip-row" id="movChips">
-      ${chips.map(c => `<button class="chip ${filter.type === c.key || (!filter.type && !c.key) ? 'active' : ''}" data-type="${c.key}">${c.label}</button>`).join('')}
-    </div>
-    ${Object.keys(grouped).length ? Object.keys(grouped).sort().reverse().map(date => `
-      <div class="section-title" style="margin:20px 0 8px;font-size:12.5px;color:var(--ink-soft);text-transform:uppercase;">${fmtDateHuman(date)}</div>
-      <div class="card">${grouped[date].map(m => movementRow(state, m)).join('')}</div>
-    `).join('') : emptyState('list', 'Sin resultados', 'Prueba con otro filtro o registra un nuevo movimiento.')}
-    `;
-  }
-
-  /* ---------------- CUENTAS ---------------- */
-  function accountsView(state) {
-    const active = state.accounts.filter(a => a.active);
-    const inactive = state.accounts.filter(a => !a.active);
-    return `
-    <div class="grid-2">
-      ${active.map(a => `
-      <div class="stub" data-acc="${a.id}" style="--bar:${a.color};cursor:pointer;">
-        <div class="label">${typeName(a.type)}</div>
-        <div class="amount num" style="font-size:20px;">${fmt(a.currentBalance, a.currency)}</div>
-        <div class="sub">${a.name}</div>
-        ${a.type === 'credito' ? `<div class="sub">Cupo disponible: <b class="num">${fmt(Calc.cupoDisponible(a))}</b></div>` : ''}
-      </div>`).join('')}
-    </div>
-    ${inactive.length ? `<div class="section-title">Cuentas inactivas</div><div class="card">${inactive.map(a => `
-      <div class="ledger-row"><div class="row-dot" style="background:${a.color}"></div><div class="row-body"><div class="row-title">${a.name}</div><div class="row-sub">${typeName(a.type)} · inactiva</div></div>
-      <button class="btn ghost" data-reactivate="${a.id}" style="font-size:12px;">Reactivar</button></div>`).join('')}</div>` : ''}
-    `;
-  }
-  function typeName(t) {
-    return { corriente: 'Cuenta corriente', vista: 'Cuenta vista', debito: 'Cuenta débito', efectivo: 'Efectivo', credito: 'Tarjeta de crédito', ahorro: 'Ahorro', otra: 'Cuenta personalizada' }[t] || t;
-  }
-
-  /* ---------------- AGENDA (cuotas + programados) ---------------- */
-  function agendaView(state, tab = 'cuotas') {
-    return `
-    <div class="seg" style="margin-bottom:16px;">
-      <button data-tab="cuotas" class="${tab === 'cuotas' ? 'active' : ''}">Cuotas</button>
-      <button data-tab="programados" class="${tab === 'programados' ? 'active' : ''}">Programados</button>
-    </div>
-    ${tab === 'cuotas' ? cuotasTab(state) : programadosTab(state)}
-    `;
-  }
-
-  function cuotasTab(state) {
-    if (!state.installmentPlans.length) return emptyState('card', 'Sin compras en cuotas', 'Registra una compra en cuotas desde el botón +.');
-    return state.installmentPlans.map(p => {
-      const card = state.accounts.find(a => a.id === p.cardId);
-      const paid = p.installments.filter(i => i.status === 'paid').length;
-      const pct = Math.round((paid / p.installmentsCount) * 100);
-      const next = p.installments.find(i => i.status === 'pending');
-      const pendingTotal = p.installments.filter(i => i.status === 'pending').reduce((s, i) => s + i.amount, 0);
-      return `
-      <div class="card" style="margin-bottom:10px;" data-plan="${p.id}">
-        <div class="card-head" style="margin-bottom:6px;">
-          <h3 style="text-transform:none;color:var(--ink);font-size:14.5px;">${p.description || 'Compra en cuotas'}</h3>
-          <span class="badge ${paid === p.installmentsCount ? 'paid' : 'pending'}">${paid}/${p.installmentsCount}</span>
-        </div>
-        <div class="text-soft" style="margin-bottom:8px;">${card ? card.name : ''} · Total ${fmt(p.totalAmount)}</div>
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div style="display:flex;justify-content:space-between;margin-top:10px;align-items:center;">
-          <div class="text-soft">${next ? `Próxima cuota ${fmtDateHuman(next.dueDate)} · ${fmt(next.amount)}` : 'Cuotas completas'}</div>
-          ${next ? `<div class="btn-row">
-            <button class="btn ghost" data-pay-one="${p.id}" style="font-size:12px;">Pagar cuota</button>
-            <button class="btn primary" data-pay-all="${p.id}" style="font-size:12px;">Pagar todo (${fmt(pendingTotal)})</button>
-          </div>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  function programadosTab(state) {
-    if (!state.scheduled.length) return emptyState('calendar', 'Sin gastos programados', 'Agrega arriendo, suscripciones u otros pagos recurrentes.');
-    const sorted = [...state.scheduled].sort((a, b) => a.nextDate.localeCompare(b.nextDate));
-    return sorted.map(s => {
-      const cat = state.categories.find(c => c.id === s.categoryId);
-      const d = daysUntil(s.nextDate);
-      const badge = s.paused ? '<span class="badge pending">Pausado</span>' : d < 0 ? '<span class="badge overdue">Vencido</span>' : d <= 3 ? '<span class="badge pending">Próximo</span>' : '<span class="badge scheduled">Programado</span>';
-      return `
-      <div class="card" style="margin-bottom:10px;" data-sched="${s.id}">
-        <div class="card-head" style="margin-bottom:4px;">
-          <h3 style="text-transform:none;color:var(--ink);font-size:14.5px;">${s.name}</h3>
-          ${badge}
-        </div>
-        <div class="text-soft" style="margin-bottom:10px;">${cat ? cat.name : ''} · ${freqLabel(s.frequency)} · vence ${fmtDateHuman(s.nextDate)}</div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="num" style="font-weight:600;font-size:16px;">${fmt(s.amount)}</div>
-          <div class="btn-row">
-            <button class="btn ghost" data-sched-pause="${s.id}" style="font-size:12px;">${s.paused ? 'Reanudar' : 'Pausar'}</button>
-            ${!s.paused ? `<button class="btn primary" data-sched-pay="${s.id}" style="font-size:12px;">Marcar pagado</button>` : ''}
+      <div class="modal-body">
+        <div class="tabs" id="movementTypeTabs"></div>
+        <div class="form-grid" style="margin-top:16px;">
+          <div class="field">
+            <label for="amount">Monto</label>
+            <input id="amount" name="amount" type="number" min="0" step="0.01" required />
+          </div>
+          <div class="field">
+            <label for="effectiveAt">Fecha efectiva</label>
+            <input id="effectiveAt" name="effectiveAt" type="date" required />
+          </div>
+          <div class="field">
+            <label for="sourceAccountId">Cuenta origen</label>
+            <select id="sourceAccountId" name="sourceAccountId"></select>
+          </div>
+          <div class="field">
+            <label for="destinationAccountId">Cuenta destino</label>
+            <select id="destinationAccountId" name="destinationAccountId"></select>
+          </div>
+          <div class="field">
+            <label for="category">Categoría</label>
+            <select id="category" name="category"></select>
+          </div>
+          <div class="field">
+            <label for="status">Estado</label>
+            <select id="status" name="status">
+              <option value="paid">Pagado</option>
+              <option value="pending">Pendiente</option>
+              <option value="scheduled">Programado</option>
+            </select>
+          </div>
+          <div class="field span-2">
+            <label for="description">Descripción</label>
+            <textarea id="description" name="description" placeholder="Ej: supermercado, sueldo, cuota notebook"></textarea>
+          </div>
+          <div class="field">
+            <label for="installments">Cuotas</label>
+            <input id="installments" name="installments" type="number" min="1" step="1" value="1" />
+          </div>
+          <div class="field">
+            <label for="frequency">Recurrencia</label>
+            <select id="frequency" name="frequency">
+              <option value="none">Sin recurrencia</option>
+              <option value="weekly">Semanal</option>
+              <option value="monthly">Mensual</option>
+            </select>
           </div>
         </div>
-      </div>`;
-    }).join('');
-  }
-  function freqLabel(f) { return { monthly: 'Mensual', weekly: 'Semanal', custom: 'Personalizado' }[f] || f; }
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" value="cancel">Cancelar</button>
+        <button class="btn primary" id="saveMovementBtn" value="default">Guardar</button>
+      </div>
+    </form>
+  </dialog>
 
-  /* ---------------- REPORTES ---------------- */
-  function reportsView(state) {
-    const cats = Calc.gastosPorCategoria(state);
-    const maxCat = cats.length ? cats[0].total : 1;
-    const flows = Calc.last6MonthsFlow(state);
-    const maxFlow = Math.max(1, ...flows.map(f => Math.max(f.ingresos, f.gastos)));
-    const deuda = Calc.totalDeudaTarjetas(state);
+  <script>
+    const STORAGE_KEY = 'nexo-finanzas-v1';
+    const todayISO = () => new Date().toISOString().slice(0,10);
+    const uid = () =>
+      Math.random().toString(36).slice(2,10) +
+      Date.now().toString(36).slice(-4);
+    const currency = (n, code='CLP') =>
+      new Intl.NumberFormat('es-CL', {
+        style:'currency', currency: code, maximumFractionDigits: 0
+      }).format(Number(n || 0));
 
-    return `
-    <div class="grid-2" style="margin-bottom:16px;">
-      <div class="stub" style="--bar:var(--income)"><div class="label">Ingresos del mes</div><div class="amount num pos" style="font-size:19px;">${fmt(Calc.monthFlows(state).ingresos)}</div></div>
-      <div class="stub" style="--bar:var(--expense)"><div class="label">Gastos del mes</div><div class="amount num neg" style="font-size:19px;">${fmt(Calc.monthFlows(state).gastos)}</div></div>
-    </div>
+    const NAV = [
+      { id:'dashboard',   label:'Inicio',    icon:'⌂' },
+      { id:'movements',   label:'Mov.',      icon:'↹' },
+      { id:'accounts',    label:'Cuentas',   icon:'◫' },
+      { id:'installments',label:'Cuotas',    icon:'▤' },
+      { id:'scheduled',   label:'Prog.',     icon:'◷' },
+      { id:'reports',     label:'Reportes',  icon:'◫' },
+      { id:'settings',    label:'Ajustes',   icon:'⚙' },
+    ];
 
-    <div class="section-title">Ingresos vs. gastos — últimos 6 meses</div>
-    <div class="card">
-      <div class="bar-chart">
-        ${flows.map(f => `
-          <div class="bar-col">
-            <div class="bars">
-              <div class="bar income" style="height:${Math.max(3, (f.ingresos / maxFlow) * 100)}px"></div>
-              <div class="bar expense" style="height:${Math.max(3, (f.gastos / maxFlow) * 100)}px"></div>
+    const ACCOUNT_TYPES = [
+      ['debit','Cuenta débito'],
+      ['vista','Cuenta vista'],
+      ['checking','Cuenta corriente'],
+      ['cash','Efectivo'],
+      ['credit','Tarjeta de crédito'],
+      ['savings','Ahorro'],
+      ['custom','Personalizada']
+    ];
+
+    let state = loadState();
+    let currentScreen = 'dashboard';
+    let currentMovementKind = 'expense';
+
+    function defaultState() {
+      return {
+        theme: matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
+        accounts: [],
+        transactions: [],
+        installmentPlans: [],
+        installments: [],
+        recurringRules: [],
+        alerts: [],
+        auditLog: [],
+        categories: [
+          'Alimentación','Transporte','Hogar','Salud','Educación',
+          'Suscripciones','Ocio','Ingresos','Deudas','Transferencias',
+          'Ahorro','Inversión','Otros'
+        ]
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : defaultState();
+      } catch {
+        return defaultState();
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function resetApp() {
+      if (!confirm('Esto borrará todos tus datos locales de Nexo Finanzas. ¿Quieres continuar?')) {
+        return;
+      }
+      state = defaultState();
+      saveState();
+      render();
+    }
+
+    function logAudit(action, entityType, entityId, before, after) {
+      state.auditLog.unshift({
+        id: uid(),
+        action,
+        entityType,
+        entityId,
+        before,
+        after,
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    function monthOffset(offset) {
+      const d = new Date();
+      d.setMonth(d.getMonth()+offset);
+      return d.toISOString().slice(0,7);
+    }
+    function monthDate(day) {
+      const d = new Date();
+      d.setDate(day);
+      return d.toISOString().slice(0,10);
+    }
+
+    function seededData() {
+      const debit = {
+        id: uid(), name:'Banco Chile Débito', type:'debit',
+        initialBalance:420000, currentBalance:420000,
+        currency:'CLP', color:'#14b8a6', status:'active'
+      };
+      const cash = {
+        id: uid(), name:'Efectivo', type:'cash',
+        initialBalance:65000, currentBalance:65000,
+        currency:'CLP', color:'#22c55e', status:'active'
+      };
+      const credit = {
+        id: uid(), name:'Visa Falabella', type:'credit',
+        initialBalance:0, currentBalance:0,
+        currency:'CLP', color:'#f59e0b', status:'active',
+        creditLimit:1500000, billingDay:25, dueDay:5
+      };
+      const savings = {
+        id: uid(), name:'Fondo ahorro', type:'savings',
+        initialBalance:900000, currentBalance:900000,
+        currency:'CLP', color:'#38bdf8', status:'active'
+      };
+      const accounts = [debit, cash, credit, savings];
+
+      const txs = [
+        {
+          id: uid(), kind:'income', amount:980000, currency:'CLP',
+          effectiveAt:todayISO(), recordedAt:new Date().toISOString(),
+          destinationAccountId:debit.id,
+          category:'Ingresos', status:'paid',
+          description:'Pago proyecto', origin:'manual'
+        },
+        {
+          id: uid(), kind:'expense', amount:18500, currency:'CLP',
+          effectiveAt:todayISO(), recordedAt:new Date().toISOString(),
+          sourceAccountId:debit.id,
+          category:'Alimentación', status:'paid',
+          description:'Colación y supermercado', origin:'manual'
+        },
+        {
+          id: uid(), kind:'transfer', amount:120000, currency:'CLP',
+          effectiveAt:todayISO(), recordedAt:new Date().toISOString(),
+          sourceAccountId:debit.id, destinationAccountId:savings.id,
+          category:'Ahorro', status:'paid',
+          description:'Separación de ahorro', origin:'manual'
+        },
+        {
+          id: uid(), kind:'expense', amount:22000, currency:'CLP',
+          effectiveAt:todayISO(), recordedAt:new Date().toISOString(),
+          sourceAccountId:cash.id,
+          category:'Transporte', status:'paid',
+          description:'Combustible', origin:'manual'
+        },
+      ];
+
+      const planId = uid();
+      const purchase = {
+        id: uid(), kind:'card_purchase', amount:360000, currency:'CLP',
+        effectiveAt:todayISO(), recordedAt:new Date().toISOString(),
+        sourceAccountId:credit.id,
+        category:'Educación', status:'paid',
+        description:'Curso + dominio',
+        installmentPlanId: planId,
+        origin:'manual'
+      };
+      txs.push(purchase);
+
+      const installmentPlans = [{
+        id: planId,
+        accountId: credit.id,
+        merchant:'Curso + dominio',
+        totalAmount:360000,
+        totalInstallments:6,
+        firstChargeDate: todayISO(),
+        billingCycleAnchor:25,
+        status:'active'
+      }];
+
+      const installments = Array.from({length:6}, (_,i)=>({
+        id: uid(), planId, accountId: credit.id,
+        number: i+1, amount: 60000,
+        dueMonth: monthOffset(i),
+        statementMonth: monthOffset(i),
+        status: i===0 ? 'billed' : 'pending'
+      }));
+
+      const recurringRules = [
+        {
+          id: uid(), label:'Arriendo', type:'expense', amount:280000,
+          frequency:'monthly', interval:1,
+          nextOccurrenceAt: monthDate(3),
+          accountId:debit.id, category:'Hogar',
+          autoGenerate:true, status:'active'
+        },
+        {
+          id: uid(), label:'Internet', type:'expense', amount:18990,
+          frequency:'monthly', interval:1,
+          nextOccurrenceAt: monthDate(8),
+          accountId:debit.id, category:'Hogar',
+          autoGenerate:true, status:'active'
+        },
+        {
+          id: uid(), label:'Gimnasio', type:'expense', amount:24990,
+          frequency:'monthly', interval:1,
+          nextOccurrenceAt: monthDate(12),
+          accountId:debit.id, category:'Salud',
+          autoGenerate:true, status:'active'
+        },
+      ];
+
+      return {
+        ...defaultState(),
+        accounts,
+        transactions: txs,
+        installmentPlans,
+        installments,
+        recurringRules,
+        alerts: [],
+        auditLog: [],
+      };
+    }
+
+    function recalculate() {
+      state.accounts.forEach(a => a.currentBalance = Number(a.initialBalance || 0));
+      for (const tx of state.transactions.filter(t => t.status !== 'cancelled')) {
+        const src = state.accounts.find(a => a.id === tx.sourceAccountId);
+        const dst = state.accounts.find(a => a.id === tx.destinationAccountId);
+        switch (tx.kind) {
+          case 'income':
+            if (dst) dst.currentBalance += Number(tx.amount);
+            break;
+          case 'expense':
+            if (src) src.currentBalance -= Number(tx.amount);
+            break;
+          case 'transfer':
+            if (src) src.currentBalance -= Number(tx.amount);
+            if (dst) dst.currentBalance += Number(tx.amount);
+            break;
+          case 'card_payment':
+            if (src) src.currentBalance -= Number(tx.amount);
+            break;
+          case 'balance_adjustment':
+            if (dst) dst.currentBalance += Number(tx.amount);
+            if (src) src.currentBalance -= Number(tx.amount);
+            break;
+          case 'card_purchase':
+            // impacta cupo, no saldo inmediato
+            break;
+        }
+      }
+      state.alerts = buildAlerts();
+      saveState();
+    }
+
+    function cardMetrics(accountId) {
+      const card = state.accounts.find(a => a.id === accountId);
+      const purchases = state.transactions
+        .filter(t => t.kind === 'card_purchase' &&
+                     t.sourceAccountId === accountId &&
+                     t.status !== 'cancelled')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const payments = state.transactions
+        .filter(t => t.kind === 'card_payment' &&
+                     t.destinationAccountId === accountId &&
+                     t.status !== 'cancelled')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const totalDebt = state.installments
+        .filter(i => i.accountId === accountId &&
+                     !['paid','cancelled'].includes(i.status))
+        .reduce((s,i)=>s+Number(i.amount),0);
+
+      const billedDebt = state.installments
+        .filter(i => i.accountId === accountId && i.status === 'billed')
+        .reduce((s,i)=>s+Number(i.amount),0);
+
+      const futureDebt = state.installments
+        .filter(i => i.accountId === accountId && i.status === 'pending')
+        .reduce((s,i)=>s+Number(i.amount),0);
+
+      const usedLimit = Math.max(purchases - payments, 0);
+      const limit = Number(card.creditLimit || 0);
+
+      return {
+        limit,
+        usedLimit,
+        availableLimit: Math.max(limit - usedLimit, 0),
+        totalDebt,
+        billedDebt,
+        futureDebt,
+        usagePct: limit ? (usedLimit / limit) * 100 : 0
+      };
+    }
+
+    function upcomingCommitments() {
+      const today = new Date();
+      const limit = new Date();
+      limit.setDate(limit.getDate()+7);
+
+      const recurring = state.recurringRules
+        .filter(r => r.status === 'active')
+        .filter(r => {
+          const d = new Date(r.nextOccurrenceAt);
+          return d >= today && d <= limit;
+        })
+        .map(r => ({
+          label:r.label,
+          amount:r.amount,
+          date:r.nextOccurrenceAt,
+          type:'programado'
+        }));
+
+      const monthKey = limit.toISOString().slice(0,7);
+      const installments = state.installments
+        .filter(i => i.status !== 'paid' && i.dueMonth <= monthKey)
+        .map(i => ({
+          label:`Cuota ${i.number}/${state.installmentPlans.find(p=>p.id===i.planId)?.totalInstallments || '?'}`,
+          amount:i.amount,
+          date:i.dueMonth+'-01',
+          type:'cuota'
+        }));
+
+      const items = [...recurring, ...installments]
+        .sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+
+      return {
+        items,
+        total: items.reduce((s,i)=>s+Number(i.amount),0)
+      };
+    }
+
+    function overdueCommitments() {
+      const today = todayISO();
+      const items = state.recurringRules
+        .filter(r => r.status==='active' && r.nextOccurrenceAt < today)
+        .map(r => ({
+          label:r.label,
+          amount:r.amount,
+          date:r.nextOccurrenceAt,
+          type:'programado'
+        }));
+      return {
+        items,
+        total: items.reduce((s,i)=>s+Number(i.amount),0)
+      };
+    }
+
+    function getMetrics() {
+      const liquidTypes = ['debit','vista','checking','cash'];
+      const liquid = state.accounts
+        .filter(a => liquidTypes.includes(a.type) && a.status === 'active')
+        .reduce((s,a)=>s+Number(a.currentBalance),0);
+
+      const savings = state.accounts
+        .filter(a => a.type === 'savings' && a.status === 'active')
+        .reduce((s,a)=>s+Number(a.currentBalance),0);
+
+      const today = todayISO();
+      const month = today.slice(0,7);
+
+      const incomeToday = state.transactions
+        .filter(t => t.kind === 'income' &&
+                     t.effectiveAt === today &&
+                     t.status === 'paid')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const expenseToday = state.transactions
+        .filter(t => t.kind === 'expense' &&
+                     t.effectiveAt === today &&
+                     t.status === 'paid')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const incomeMonth = state.transactions
+        .filter(t => t.kind === 'income' &&
+                     t.effectiveAt.startsWith(month) &&
+                     t.status === 'paid')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const expenseMonth = state.transactions
+        .filter(t => t.kind === 'expense' &&
+                     t.effectiveAt.startsWith(month) &&
+                     t.status === 'paid')
+        .reduce((s,t)=>s+Number(t.amount),0);
+
+      const upcoming = upcomingCommitments();
+      const overdue = overdueCommitments();
+      const cards = state.accounts
+        .filter(a => a.type === 'credit')
+        .map(a => ({ account:a, ...cardMetrics(a.id) }));
+
+      const cardDebt = cards.reduce((s,c)=>s+c.totalDebt,0);
+
+      const availableReal = liquid - upcoming.total - overdue.total;
+      const grossBalance = liquid + savings;
+
+      return {
+        liquid,
+        savings,
+        incomeToday,
+        expenseToday,
+        incomeMonth,
+        expenseMonth,
+        grossBalance,
+        upcoming,
+        overdue,
+        cards,
+        cardDebt,
+        availableReal,
+        netMonth: incomeMonth - expenseMonth
+      };
+    }
+
+    function buildAlerts() {
+      const metrics = getMetrics();
+      const alerts = [];
+
+      if (metrics.availableReal < 0) {
+        alerts.push({
+          level:'danger',
+          text:'Tu disponible real está negativo considerando próximos compromisos.'
+        });
+      }
+      if (metrics.overdue.total > 0) {
+        alerts.push({
+          level:'warning',
+          text:`Tienes ${metrics.overdue.items.length} compromisos vencidos.`
+        });
+      }
+      metrics.cards.forEach(card => {
+        if (card.usagePct >= 80) {
+          alerts.push({
+            level:'warning',
+            text:`La tarjeta ${card.account.name} usa ${card.usagePct.toFixed(0)}% del cupo.`
+          });
+        }
+      });
+      state.accounts
+        .filter(a => ['debit','vista','checking','cash'].includes(a.type) && a.currentBalance < 50000)
+        .forEach(a => {
+          alerts.push({
+            level:'warning',
+            text:`Saldo bajo en ${a.name}.`
+          });
+        });
+
+      return alerts;
+    }
+
+    function kpi(label, value, foot, tone='') {
+      return `
+        <article class="card">
+          <div class="subtle">${label}</div>
+          <div class="kpi-value ${tone}">${value}</div>
+          <div class="kpi-foot">${foot}</div>
+        </article>`;
+    }
+
+    function empty(title, desc) {
+      return `
+        <div class="empty">
+          <strong>${title}</strong>
+          <span>${desc}</span>
+        </div>`;
+    }
+
+    function accountCard(a) {
+      if (a.type === 'credit') {
+        const m = cardMetrics(a.id);
+        return `
+          <div class="account-row" data-account-id="${a.id}">
+            <div>
+              <strong>${a.name}</strong>
+              <div class="subtle">Tarjeta · vence ${a.dueDay || '-'} · factura ${a.billingDay || '-'}</div>
             </div>
-            <div class="lbl">${f.ym.slice(5)}</div>
-          </div>`).join('')}
-      </div>
-      <div style="display:flex;gap:16px;justify-content:center;margin-top:10px;font-size:11.5px;color:var(--ink-soft);">
-        <span><span style="display:inline-block;width:8px;height:8px;background:var(--income);border-radius:2px;margin-right:4px;"></span>Ingresos</span>
-        <span><span style="display:inline-block;width:8px;height:8px;background:var(--expense);border-radius:2px;margin-right:4px;"></span>Gastos</span>
-      </div>
-    </div>
-
-    <div class="section-title">Gastos por categoría — este mes</div>
-    <div class="card">
-      ${cats.length ? cats.map(c => `
-        <div class="cat-bar-row">
-          <div class="top"><span>${c.cat.name}</span><span class="amt">${fmt(c.total)}</span></div>
-          <div class="cat-track"><div class="cat-fill" style="width:${(c.total / maxCat) * 100}%;background:${c.cat.color}"></div></div>
-        </div>`).join('') : emptyState('chart', 'Sin gastos este mes', 'Cuando registres gastos verás aquí el desglose por categoría.')}
-    </div>
-
-    <div class="section-title">Deuda y compromisos</div>
-    <div class="grid-3">
-      <div class="card"><div class="text-soft">Deuda en tarjetas</div><div class="num" style="font-size:17px;font-weight:600;margin-top:4px;">${fmt(deuda)}</div></div>
-      <div class="card"><div class="text-soft">Cuotas pendientes (mes)</div><div class="num" style="font-size:17px;font-weight:600;margin-top:4px;">${fmt(Calc.installmentsDueThisMonthUnpaid(state).reduce((s, x) => s + x.inst.amount, 0))}</div></div>
-      <div class="card"><div class="text-soft">Programados próx. 7 días</div><div class="num" style="font-size:17px;font-weight:600;margin-top:4px;">${fmt(Calc.scheduledDueWithin(state, 7).reduce((s, x) => s + x.amount, 0))}</div></div>
-    </div>
-    `;
-  }
-
-  /* ---------------- CONFIGURACIÓN ---------------- */
-  function settingsView(state) {
-    return `
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-head"><h3>Apariencia</h3></div>
-      <div class="ledger-row" style="cursor:default;">
-        <div class="row-body"><div class="row-title">Modo oscuro</div><div class="row-sub">Se guarda en este dispositivo</div></div>
-        <label class="seg" style="width:auto;">
-          <button data-theme="light" class="${state.settings.theme === 'light' ? 'active' : ''}">${icon('sun')}</button>
-          <button data-theme="dark" class="${state.settings.theme === 'dark' ? 'active' : ''}">${icon('moon')}</button>
-        </label>
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-head"><h3>Seguridad</h3></div>
-      <div class="ledger-row" style="cursor:default;">
-        <div class="row-body"><div class="row-title">Bloqueo al abrir</div><div class="row-sub">Pide confirmación visual antes de mostrar tus datos</div></div>
-        <input type="checkbox" id="lockToggle" ${state.settings.lockEnabled ? 'checked' : ''} style="width:20px;height:20px;">
-      </div>
-    </div>
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-head"><h3>Categorías</h3></div>
-      ${state.categories.map(c => `<div class="ledger-row" style="cursor:default;"><div class="row-dot" style="background:${c.color}"></div><div class="row-body"><div class="row-title">${c.name}</div></div><span class="text-soft">${c.kind === 'income' ? 'Ingreso' : c.kind === 'transfer' ? 'Transferencia' : 'Gasto'}</span></div>`).join('')}
-    </div>
-    <div class="card" style="margin-bottom:14px;">
-      <div class="card-head"><h3>Datos</h3></div>
-      <div class="btn-row">
-        <button class="btn" id="btnExport">${icon('download')} Exportar CSV</button>
-        <button class="btn danger" id="btnReset">${icon('reset')} Restablecer datos de ejemplo</button>           <button class="btn danger" id="btnNuevoInicio" style="border-color:var(--expense);">${icon('trash')} Iniciar desde cero</button>
-      </div>
-      <p class="hint">Tus datos se guardan solo en este dispositivo (localStorage). Exportar te permite respaldarlos.</p>
-    </div>
-    <div class="text-soft" style="text-align:center;margin-top:24px;">Ledger · Finanzas Personales · v1.0</div>
-    `;
-  }
-
-  return {
-    dashboard, movementsView, accountsView, agendaView, reportsView, settingsView,
-    movementRow, typeLabel
-  };
-})();
-
-// ==== js/forms.js ====
-/* ============================================================
-   FORMS — Genera el HTML de los formularios que se muestran en el sheet
-   ============================================================ */
-const Forms = (() => {
-  const { icon } = UI;
-  const COLORS = ['#2D3A8C', '#1B8A5A', '#C9862A', '#B23A2E', '#8C6BB1', '#3E8FB0', '#4E7A51', '#B0559A', '#6B7A72'];
-
-  function accountOptions(state, { onlyCash = false, excludeId = null } = {}) {
-    return state.accounts.filter(a => a.active && (!onlyCash || a.type !== 'credito') && a.id !== excludeId)
-      .map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-  }
-  function creditAccountOptions(state) {
-    return state.accounts.filter(a => a.active && a.type === 'credito').map(a => `<option value="${a.id}">${a.name}</option>`).join('');
-  }
-  function categoryOptions(state, kind) {
-    return state.categories.filter(c => c.kind === kind).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-  }
-  function colorSwatches(selected) {
-    return `<div class="swatch-row">${COLORS.map(c => `<div class="swatch-pick ${c === selected ? 'active' : ''}" data-color="${c}" style="background:${c}"></div>`).join('')}</div>`;
-  }
-
-  function sheetHead(title) {
-    return `<div class="sheet-head"><h2>${title}</h2><button class="icon-btn" id="sheetClose">${icon('close')}</button></div>`;
-  }
-
-  /* ---- Elegir tipo de movimiento ---- */
-  function movementChooser() {
-    const opts = [
-      { type: 'income', label: 'Ingreso', ic: 'up', desc: 'Sueldo, venta, ingreso extra' },
-      { type: 'expense', label: 'Gasto', ic: 'down', desc: 'Compra pagada al contado o débito' },
-      { type: 'transfer', label: 'Transferencia', ic: 'swap', desc: 'Entre cuentas propias' },
-      { type: 'installment', label: 'Compra con tarjeta', ic: 'card', desc: 'Al contado o en cuotas' },
-      { type: 'scheduled', label: 'Gasto programado', ic: 'calendar', desc: 'Arriendo, suscripción, recurrente' },
-      { type: 'adjustment', label: 'Ajuste de saldo', ic: 'edit', desc: 'Corregir el saldo de una cuenta' },
-    ];
-    return `${sheetHead('Nuevo movimiento')}
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      ${opts.map(o => `<button class="ledger-row" data-choose="${o.type}" style="border:1px solid var(--hairline);border-radius:var(--radius-s);padding:12px;">
-        <div class="icon-btn" style="pointer-events:none;">${icon(o.ic)}</div>
-        <div class="row-body"><div class="row-title">${o.label}</div><div class="row-sub">${o.desc}</div></div>
-        ${icon('chevron')}
-      </button>`).join('')}
-    </div>`;
-  }
-
-  function incomeExpenseForm(state, type) {
-    const isIncome = type === 'income';
-    return `${sheetHead(isIncome ? 'Nuevo ingreso' : 'Nuevo gasto')}
-    <form id="movForm" data-type="${type}">
-      <div class="field"><label>Monto</label><input class="num-input" type="number" min="1" step="1" name="amount" placeholder="0" required autofocus></div>
-      <div class="field"><label>Cuenta</label><select name="accountId" required>${accountOptions(state, { onlyCash: true })}</select></div>
-      <div class="field"><label>Categoría</label><select name="categoryId" required>${categoryOptions(state, isIncome ? 'income' : 'expense')}</select></div>
-      <div class="field-row">
-        <div class="field"><label>Fecha</label><input type="date" name="date" value="${DB.todayISO()}" required></div>
-        <div class="field"><label>Descripción</label><input type="text" name="description" placeholder="Opcional"></div>
-      </div>
-      <button class="btn primary block" type="submit">Guardar ${isIncome ? 'ingreso' : 'gasto'}</button>
-    </form>`;
-  }
-
-  function transferForm(state) {
-    return `${sheetHead('Transferencia entre cuentas')}
-    <form id="movForm" data-type="transfer">
-      <div class="field"><label>Monto</label><input class="num-input" type="number" min="1" name="amount" placeholder="0" required autofocus></div>
-      <div class="field-row">
-        <div class="field"><label>Desde</label><select name="fromId" id="tFrom" required>${accountOptions(state, { onlyCash: true })}</select></div>
-        <div class="field"><label>Hacia</label><select name="toId" id="tTo" required></select></div>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Fecha</label><input type="date" name="date" value="${DB.todayISO()}" required></div>
-        <div class="field"><label>Nota</label><input type="text" name="description" placeholder="Opcional"></div>
-      </div>
-      <p class="hint">Las transferencias entre tus propias cuentas no se cuentan como ingreso ni gasto en tus reportes.</p>
-      <button class="btn primary block" type="submit">Transferir</button>
-    </form>`;
-  }
-
-  function installmentForm(state) {
-    if (!Calc.creditAccounts(state).length) {
-      return `${sheetHead('Compra con tarjeta')}${`<div class="empty-state">${icon('card')}<p>Primero crea una tarjeta de crédito en la sección Cuentas.</p></div>`}`;
-    }
-    return `${sheetHead('Compra con tarjeta')}
-    <form id="movForm" data-type="installment">
-      <div class="field"><label>Monto total</label><input class="num-input" type="number" min="1" name="totalAmount" placeholder="0" required autofocus></div>
-      <div class="field"><label>Tarjeta</label><select name="cardId" required>${creditAccountOptions(state)}</select></div>
-      <div class="field"><label>Número de cuotas</label><input class="num-input" type="number" min="1" max="48" name="installmentsCount" value="1" required></div>
-      <div class="field"><label>Categoría</label><select name="categoryId" required>${categoryOptions(state, 'expense')}</select></div>
-      <div class="field-row">
-        <div class="field"><label>Fecha de compra</label><input type="date" name="purchaseDate" value="${DB.todayISO()}" required></div>
-        <div class="field"><label>Descripción</label><input type="text" name="description" placeholder="¿Qué compraste?"></div>
-      </div>
-      <p class="hint">El cupo de la tarjeta se descuenta por el total de la compra; no afecta el saldo de tus cuentas de efectivo hasta que pagues cuotas.</p>
-      <button class="btn primary block" type="submit">Registrar compra</button>
-    </form>`;
-  }
-
-  function adjustmentForm(state) {
-    return `${sheetHead('Ajuste de saldo')}
-    <form id="movForm" data-type="adjustment">
-      <div class="field"><label>Cuenta</label><select name="accountId" required>${accountOptions(state, { onlyCash: true })}</select></div>
-      <div class="field"><label>Saldo real actual</label><input class="num-input" type="number" name="newBalance" placeholder="0" required></div>
-      <div class="field"><label>Motivo</label><input type="text" name="note" placeholder="Ej: corrección tras conciliar cartola"></div>
-      <button class="btn primary block" type="submit">Ajustar saldo</button>
-    </form>`;
-  }
-
-  function scheduledForm(state, existing) {
-    const s = existing || {};
-    return `${sheetHead(existing ? 'Editar gasto programado' : 'Nuevo gasto programado')}
-    <form id="schedForm" data-id="${existing ? existing.id : ''}">
-      <div class="field"><label>Nombre</label><input type="text" name="name" value="${s.name || ''}" placeholder="Ej: Arriendo" required autofocus></div>
-      <div class="field-row">
-        <div class="field"><label>Monto</label><input class="num-input" type="number" min="1" name="amount" value="${s.amount || ''}" required></div>
-        <div class="field"><label>Día del mes</label><input class="num-input" type="number" min="1" max="28" name="dayOfMonth" value="${s.dayOfMonth || 5}" required></div>
-      </div>
-      <div class="field"><label>Categoría</label><select name="categoryId" required>${categoryOptions(state, 'expense')}</select></div>
-      <div class="field"><label>Cuenta de pago</label><select name="accountId" required>${accountOptions(state, { onlyCash: true })}</select></div>
-      <div class="field"><label>Frecuencia</label><select name="frequency"><option value="monthly">Mensual</option><option value="weekly">Semanal</option></select></div>
-      <button class="btn primary block" type="submit">Guardar</button>
-    </form>`;
-  }
-
-  function accountForm(state, existing) {
-    const a = existing || { color: COLORS[0] };
-    return `${sheetHead(existing ? 'Editar cuenta' : 'Nueva cuenta')}
-    <form id="accForm" data-id="${existing ? existing.id : ''}">
-      <div class="field"><label>Nombre</label><input type="text" name="name" value="${a.name || ''}" placeholder="Ej: Cuenta RUT" required autofocus></div>
-      <div class="field"><label>Tipo</label><select name="type" id="accType">
-        <option value="corriente" ${a.type === 'corriente' ? 'selected' : ''}>Cuenta corriente</option>
-        <option value="vista" ${a.type === 'vista' ? 'selected' : ''}>Cuenta vista</option>
-        <option value="debito" ${a.type === 'debito' ? 'selected' : ''}>Cuenta débito</option>
-        <option value="efectivo" ${a.type === 'efectivo' ? 'selected' : ''}>Efectivo</option>
-        <option value="ahorro" ${a.type === 'ahorro' ? 'selected' : ''}>Ahorro</option>
-        <option value="credito" ${a.type === 'credito' ? 'selected' : ''}>Crédito / tarjeta con cupo</option>
-        <option value="otra" ${a.type === 'otra' ? 'selected' : ''}>Personalizada</option>
-      </select></div>
-      <div class="field" id="balField"><label>${existing ? 'Saldo actual' : 'Saldo inicial'}</label><input class="num-input" type="number" name="balance" value="${existing ? a.currentBalance : ''}" placeholder="0" ${existing ? 'disabled' : ''}></div>
-      <div id="creditFields" class="${a.type === 'credito' ? '' : 'hidden'}">
-        <div class="field-row">
-          <div class="field"><label>Cupo total</label><input class="num-input" type="number" name="creditLimit" value="${a.creditLimit || ''}"></div>
-          <div class="field"><label>Día facturación</label><input class="num-input" type="number" min="1" max="28" name="billingDay" value="${a.billingDay || 5}"></div>
-        </div>
-      </div>
-      <div class="field"><label>Color</label>${colorSwatches(a.color)}<input type="hidden" name="color" value="${a.color}"></div>
-      <button class="btn primary block" type="submit">Guardar cuenta</button>
-      ${existing ? `<button type="button" class="btn danger block" id="btnDeactivate" style="margin-top:8px;">Eliminar cuenta</button>` : ''}
-    </form>`;
-  }
-
-  function payPlanConfirm(state, plan, mode) {
-    const pending = plan.installments.filter(i => i.status === 'pending');
-    const amount = mode === 'all' ? pending.reduce((s, i) => s + i.amount, 0) : pending[0].amount;
-    return `${sheetHead(mode === 'all' ? 'Pagar todas las cuotas' : 'Pagar próxima cuota')}
-    <form id="payForm" data-plan="${plan.id}" data-mode="${mode}">
-      <p class="hint" style="margin-bottom:12px;">Monto a pagar: <b class="num">${fmt(amount)}</b></p>
-      <div class="field"><label>Pagar desde</label><select name="accountId" required>${accountOptions(state, { onlyCash: true })}</select></div>
-      <button class="btn primary block" type="submit">Confirmar pago</button>
-    </form>`;
-  }
-  const fmt = Calc.fmt;
-
-  return {
-    movementChooser, incomeExpenseForm, transferForm, installmentForm, adjustmentForm,
-    scheduledForm, accountForm, payPlanConfirm, accountOptions
-  };
-})();
-
-// ==== js/app.js ====
-/* ============================================================
-   APP — Shell, router (hash-based) y orquestación de eventos.
-   Cada acción que muta datos pasa por Engine.* y luego persist().
-   ============================================================ */
-(() => {
-  let state = DB.load();
-  let route = { name: 'home', params: {} };
-  let movFilter = {};
-  let agendaTab = 'cuotas';
-
-  function persist() { DB.save(state); }
-
-  const NAV = [
-    { key: 'home', label: 'Inicio', ic: 'home' },
-    { key: 'movements', label: 'Movimientos', ic: 'list' },
-    { key: 'accounts', label: 'Cuentas', ic: 'wallet' },
-    { key: 'agenda', label: 'Agenda', ic: 'calendar' },
-    { key: 'reports', label: 'Reportes', ic: 'chart' },
-  ];
-
-  function applyTheme() {
-    document.documentElement.classList.toggle('dark', state.settings.theme === 'dark');
-  }
-
-  function pageTitle() {
-    return { home: 'Inicio', movements: 'Movimientos', accounts: 'Cuentas', agenda: 'Agenda', reports: 'Reportes', settings: 'Configuración' }[route.name] || 'Ledger';
-  }
-
-  function renderShell() {
-    applyTheme();
-    const app = document.getElementById('app');
-    app.innerHTML = `
-      <aside class="sidebar">
-        <div class="brand"><span class="mark"></span>Ledger</div>
-        ${NAV.map(n => `<button class="nav-item ${route.name === n.key ? 'active' : ''}" data-nav="${n.key}">${UI.icon(n.ic)}${n.label}</button>`).join('')}
-        <div style="flex:1"></div>
-        <button class="nav-item ${route.name === 'settings' ? 'active' : ''}" data-nav="settings">${UI.icon('settings')}Configuración</button>
-      </aside>
-      <div class="main">
-        <div class="topbar">
-          <h1>${pageTitle()}</h1>
-          <div class="actions">
-            <span class="status-pill ${navigator.onLine ? '' : 'offline'}" id="statusPill"><span class="status-dot"></span>${navigator.onLine ? 'En línea' : 'Sin conexión'}</span>
-            <button class="icon-btn" data-nav="settings" aria-label="Configuración">${UI.icon('settings')}</button>
+            <div>
+              <strong>${currency(m.usedLimit)}</strong>
+              <div class="subtle">usado</div>
+            </div>
+            <div>
+              <strong>${currency(m.availableLimit)}</strong>
+              <div class="subtle">disponible</div>
+              <button class="btn ghost" data-delete-account="${a.id}">Eliminar</button>
+            </div>
+          </div>`;
+      }
+      return `
+        <div class="account-row" data-account-id="${a.id}">
+          <div>
+            <strong>${a.name}</strong>
+            <div class="subtle">${ACCOUNT_TYPES.find(t => t[0] === a.type)?.[1] || a.type}</div>
           </div>
-        </div>
-        <div class="content" id="content"></div>
-      </div>
-      <button class="fab" id="fabAdd" aria-label="Agregar movimiento">${UI.icon('plus')}</button>
-      <nav class="bottom-nav">
-        ${NAV.map(n => `<button class="bn-item ${route.name === n.key ? 'active' : ''}" data-nav="${n.key}">${UI.icon(n.ic)}<span>${n.label}</span></button>`).join('')}
-      </nav>
-    `;
-    renderContent();
-    bindShellEvents();
-  }
-
-  function renderContent() {
-    const c = document.getElementById('content');
-    if (!c) return;
-    if (route.name === 'home') c.innerHTML = Views.dashboard(state);
-    else if (route.name === 'movements') c.innerHTML = Views.movementsView(state, movFilter);
-    else if (route.name === 'accounts') c.innerHTML = Views.accountsView(state);
-    else if (route.name === 'agenda') c.innerHTML = Views.agendaView(state, agendaTab);
-    else if (route.name === 'reports') c.innerHTML = Views.reportsView(state);
-    else if (route.name === 'settings') c.innerHTML = Views.settingsView(state);
-    bindContentEvents();
-  }
-
-  function goto(name) { route = { name, params: {} }; renderShell(); }
-
-  /* ---------------- Bind: shell-level (persistent) ---------------- */
-  function bindShellEvents() {
-    document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => goto(b.dataset.nav));
-    document.getElementById('fabAdd').onclick = () => openMovementChooser();
-  }
-
-  /* ---------------- Bind: content-level (re-bound on every render) ---------------- */
-  function bindContentEvents() {
-    if (route.name === 'movements') {
-      const search = document.getElementById('movSearch');
-      if (search) search.oninput = debounce(() => { movFilter.q = search.value; renderContent(); }, 250);
-      document.querySelectorAll('#movChips .chip').forEach(ch => ch.onclick = () => {
-        movFilter.type = ch.dataset.type || undefined; renderContent();
-      });
-      document.querySelectorAll('[data-mov]').forEach(row => row.onclick = () => openMovementDetail(row.dataset.mov));
+          <div>
+            <strong>${currency(a.currentBalance, a.currency)}</strong>
+            <div class="subtle">saldo actual</div>
+          </div>
+          <div>
+            <span class="tag">${a.status}</span>
+            <button class="btn ghost" data-delete-account="${a.id}">Eliminar</button>
+          </div>
+        </div>`;
     }
-    if (route.name === 'accounts') {
-      document.querySelectorAll('[data-acc]').forEach(card => card.onclick = () => openAccountForm(card.dataset.acc));
-      document.querySelectorAll('[data-reactivate]').forEach(b => b.onclick = (e) => {
-        e.stopPropagation();
-        state.accounts.find(a => a.id === b.dataset.reactivate).active = true;
-        persist(); renderContent(); UI.toast('Cuenta reactivada');
-      });
+
+    function txRow(tx) {
+      const accName = id => state.accounts.find(a=>a.id===id)?.name || '—';
+      const label = ({
+        income:'Ingreso',
+        expense:'Gasto',
+        transfer:'Transferencia',
+        card_purchase:'Compra TC',
+        card_payment:'Pago TC',
+        balance_adjustment:'Ajuste'
+      })[tx.kind] || tx.kind;
+
+      return `
+        <div class="tx-row">
+          <div>
+            <strong>${tx.description || label}</strong>
+            <div class="subtle">${label} · ${tx.category || 'Sin categoría'}</div>
+          </div>
+          <span>${tx.effectiveAt}</span>
+          <span>${accName(tx.sourceAccountId)}${tx.destinationAccountId ? ' → ' + accName(tx.destinationAccountId) : ''}</span>
+          <span class="${tx.kind==='income'?'income':tx.kind==='expense'?'expense':'muted'}">${tx.status}</span>
+          <strong>${currency(tx.amount, tx.currency || 'CLP')}</strong>
+        </div>`;
     }
-    if (route.name === 'agenda') {
-      document.querySelectorAll('[data-tab]').forEach(t => t.onclick = () => { agendaTab = t.dataset.tab; renderContent(); });
-      document.querySelectorAll('[data-pay-one]').forEach(b => b.onclick = () => openPayPlan(b.dataset.payOne, 'one'));
-      document.querySelectorAll('[data-pay-all]').forEach(b => b.onclick = () => openPayPlan(b.dataset.payAll, 'all'));
-      document.querySelectorAll('[data-sched-pay]').forEach(b => b.onclick = () => {
-        Engine.markScheduledPaid(state, b.dataset.schedPay);
-        persist(); renderContent(); renderTopbarStatus();
-        UI.toast('Gasto marcado como pagado');
-      });
-      document.querySelectorAll('[data-sched-pause]').forEach(b => b.onclick = () => {
-        const s = state.scheduled.find(x => x.id === b.dataset.schedPause);
-        s.paused = !s.paused; persist(); renderContent();
-      });
+
+    function summaryBlock() {
+      const m = getMetrics();
+      return [
+        `<div class="alert-row"><strong>Balance bruto</strong><span>${currency(m.grossBalance)}</span></div>`,
+        `<div class="alert-row"><strong>Disponible real</strong><span>${currency(m.availableReal)}</span></div>`,
+        `<div class="alert-row"><strong>Comprometido 7 días</strong><span>${currency(m.upcoming.total)}</span></div>`,
+        `<div class="alert-row"><strong>Vencido</strong><span>${currency(m.overdue.total)}</span></div>`,
+      ].join('');
     }
-    if (route.name === 'settings') {
-      document.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => {
-        state.settings.theme = b.dataset.theme; persist(); applyTheme(); renderContent();
-      });
-      const lock = document.getElementById('lockToggle');
-      if (lock) lock.onchange = () => { state.settings.lockEnabled = lock.checked; persist(); };
-      document.getElementById('btnExport').onclick = () => {
-        const csv = DB.exportCSV(state);
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = 'ledger-movimientos.csv'; a.click();
-        UI.toast('CSV exportado');
-      };
-      document.getElementById('btnReset').onclick = () => {
-        if (confirm('Esto reemplazará todos tus datos actuales por datos de ejemplo. ¿Continuar?')) {
-          state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos');
-        }
-      };
-             const _bni = document.getElementById('btnNuevoInicio');
-      if (_bni) _bni.onclick = () => {
-        if (confirm('⚠️ ¿Iniciar desde cero? Se eliminarán TODAS las cuentas, movimientos y datos. No se puede deshacer.')) {
-          localStorage.removeItem('ledger:v1');
-          location.reload();
-        }
-      };
+
+    function computeMonthlyBars() {
+      const months = [];
+      const now = new Date();
+      for (let i=5; i>=0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+        const key = d.toISOString().slice(0,7);
+        const short = d.toLocaleDateString('es-CL', { month:'short' });
+        const incomes = state.transactions
+          .filter(t=>t.kind==='income' &&
+                     t.effectiveAt.startsWith(key) &&
+                     t.status==='paid')
+          .reduce((s,t)=>s+Number(t.amount),0);
+        const expenses = state.transactions
+          .filter(t=>t.kind==='expense' &&
+                     t.effectiveAt.startsWith(key) &&
+                     t.status==='paid')
+          .reduce((s,t)=>s+Number(t.amount),0);
+
+        months.push({ label: short, value: incomes, type:'income' });
+        months.push({ label: short, value: expenses, type:'expense' });
+      }
+      const max = Math.max(...months.map(m=>m.value), 1);
+      return months.map(m => ({
+        ...m,
+        height: Math.max((m.value/max)*100, 8)
+      }));
     }
-  }
 
-  function renderTopbarStatus() { /* home/reports depend on live totals; simplest: re-render whole shell content on money-affecting actions */ }
+    function renderDashboard() {
+      const m = getMetrics();
+      const recent = [...state.transactions]
+        .sort((a,b)=>b.recordedAt.localeCompare(a.recordedAt))
+        .slice(0,8);
 
-  /* ---------------- Movimientos: flujo de creación ---------------- */
-  function openMovementChooser() {
-    UI.openSheet(Forms.movementChooser());
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.querySelectorAll('[data-choose]').forEach(b => b.onclick = () => {
-      const t = b.dataset.choose;
-      if (t === 'income' || t === 'expense') openMovementForm(t);
-      else if (t === 'transfer') openTransferForm();
-      else if (t === 'installment') openInstallmentForm();
-      else if (t === 'scheduled') openScheduledForm();
-      else if (t === 'adjustment') openAdjustmentForm();
-    });
-  }
+      return `
+        <section class="grid kpis">
+          ${kpi('Balance total', currency(m.grossBalance), 'Suma de liquidez y ahorro activos')}
+          ${kpi('Disponible real', currency(m.availableReal), 'Liquidez menos compromisos cercanos', m.availableReal < 0 ? 'danger' : 'income')}
+          ${kpi('Ingresos del día', currency(m.incomeToday), 'Entradas efectivas hoy', 'income')}
+          ${kpi('Gastos del día', currency(m.expenseToday), 'Salidas pagadas hoy', 'expense')}
+          ${kpi('Deuda tarjetas', currency(m.cardDebt), 'Cuotas aún no liquidadas', 'warning')}
+        </section>
 
-  function openMovementForm(type) {
-    UI.openSheet(Forms.incomeExpenseForm(state, type));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.getElementById('movForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const payload = { accountId: fd.get('accountId'), amount: Number(fd.get('amount')), categoryId: fd.get('categoryId'), description: fd.get('description'), date: fd.get('date') };
-      try {
-        if (type === 'income') Engine.applyIncome(state, payload); else Engine.applyExpense(state, payload);
-        persist(); UI.closeSheet(); renderContent(); if (route.name !== 'home') { /* no-op */ } UI.toast(type === 'income' ? 'Ingreso registrado' : 'Gasto registrado');
-        if (route.name === 'movements' || route.name === 'home') renderContent();
-      } catch (err) { UI.toast(err.message); }
-    };
-  }
+        <section class="grid split" style="margin-top:16px;">
+          <div class="grid">
+            <article class="card">
+              <div class="section-head">
+                <h2>Balance por cuenta</h2>
+                <span class="tag">${state.accounts.length} cuentas</span>
+              </div>
+              <div class="accounts-list">
+                ${state.accounts.length
+                  ? state.accounts.map(accountCard).join('')
+                  : empty('Aún no hay cuentas', 'Carga datos de ejemplo o crea tu primera cuenta en Configuración futura.')}
+              </div>
+            </article>
+            <article class="card">
+              <div class="section-head">
+                <h2>Últimos movimientos</h2>
+                <span class="tag">Trazabilidad</span>
+              </div>
+              <div class="list">
+                ${recent.length
+                  ? recent.map(txRow).join('')
+                  : empty('Sin movimientos todavía', 'Usa el botón nuevo movimiento para comenzar.')}
+              </div>
+            </article>
+          </div>
+          <div class="grid">
+            <article class="card">
+              <div class="section-head">
+                <h2>Próximos compromisos</h2>
+                <span class="tag warning">${currency(m.upcoming.total)}</span>
+              </div>
+              <div class="timeline">
+                ${m.upcoming.items.length
+                  ? m.upcoming.items.slice(0,6).map(item => `
+                    <div class="timeline-row">
+                      <strong>${item.label}</strong>
+                      <span>${item.type}</span>
+                      <span>${item.date}</span>
+                      <strong>${currency(item.amount)}</strong>
+                    </div>`).join('')
+                  : empty('Sin vencimientos próximos', 'No hay cuotas ni programados dentro de la ventana cercana.')}
+              </div>
+            </article>
+            <article class="card">
+              <div class="section-head">
+                <h2>Alertas</h2>
+                <span class="tag">${state.alerts.length}</span>
+              </div>
+              <div class="alerts-list">
+                ${state.alerts.length
+                  ? state.alerts.map(a => `
+                    <div class="alert-row">
+                      <strong class="${a.level}">${a.level.toUpperCase()}</strong>
+                      <span>${a.text}</span>
+                    </div>`).join('')
+                  : empty('Todo bajo control', 'No hay alertas relevantes por ahora.')}
+              </div>
+            </article>
+            <article class="card">
+              <div class="section-head">
+                <h2>Tarjetas y cupo</h2>
+                <span class="tag">Crédito</span>
+              </div>
+              <div class="grid">
+                ${m.cards.length
+                  ? m.cards.map(card => `
+                    <div class="account-row">
+                      <div>
+                        <strong>${card.account.name}</strong>
+                        <div class="subtle">Facturada ${currency(card.billedDebt)} · Futura ${currency(card.futureDebt)}</div>
+                      </div>
+                      <div style="min-width:160px;">
+                        <div class="progress"><span style="width:${Math.min(card.usagePct,100)}%"></span></div>
+                        <div class="subtle">Uso ${card.usagePct.toFixed(0)}%</div>
+                      </div>
+                      <div>
+                        <strong>${currency(card.availableLimit)}</strong>
+                        <div class="subtle">cupo disponible</div>
+                      </div>
+                    </div>`).join('')
+                  : empty('Sin tarjetas registradas', 'Agrega una cuenta de crédito para activar este módulo.')}
+              </div>
+            </article>
+          </div>
+        </section>`;
+    }
 
-  function openTransferForm() {
-    UI.openSheet(Forms.transferForm(state));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    const fromSel = document.getElementById('tFrom'), toSel = document.getElementById('tTo');
-    function refreshTo() { toSel.innerHTML = Forms.accountOptions(state, { onlyCash: true, excludeId: fromSel.value }); }
-    fromSel.onchange = refreshTo; refreshTo();
-    document.getElementById('movForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      try {
-        Engine.applyTransfer(state, { fromId: fd.get('fromId'), toId: fd.get('toId'), amount: Number(fd.get('amount')), description: fd.get('description'), date: fd.get('date') });
-        persist(); UI.closeSheet(); renderContent(); UI.toast('Transferencia realizada');
-      } catch (err) { UI.toast(err.message); }
-    };
-  }
+    function renderMovements() {
+      const items = [...state.transactions]
+        .sort((a,b)=>b.effectiveAt.localeCompare(a.effectiveAt));
+      return `
+        <section class="card">
+          <div class="section-head">
+            <h2>Historial de movimientos</h2>
+            <button class="btn primary" data-open-dialog>Nuevo</button>
+          </div>
+          <div class="subtle" style="margin-bottom:12px;">
+            Incluye ingresos, gastos, transferencias, compras con tarjeta, pagos y ajustes.
+          </div>
+          <div class="list">
+            ${items.length
+              ? items.map(txRow).join('')
+              : empty('Sin historial aún', 'Registra tu primer movimiento para activar balances y reportes.')}
+          </div>
+        </section>`;
+    }
 
-  function openInstallmentForm() {
-    UI.openSheet(Forms.installmentForm(state));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    const form = document.getElementById('movForm');
-    if (!form) return;
-    form.onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      Engine.applyInstallmentPurchase(state, {
-        cardId: fd.get('cardId'), totalAmount: Number(fd.get('totalAmount')),
-        installmentsCount: Number(fd.get('installmentsCount')), categoryId: fd.get('categoryId'),
-        description: fd.get('description'), purchaseDate: fd.get('purchaseDate')
-      });
-      persist(); UI.closeSheet(); renderContent(); UI.toast('Compra registrada');
-    };
-  }
+    function renderAccounts() {
+      const cards = state.accounts.filter(a=>a.type==='credit');
+      const nonCards = state.accounts.filter(a=>a.type!=='credit');
+      return `
+        <section class="grid cards-3">
+          <article class="card">
+            <h2>Cuentas líquidas</h2>
+            <div class="accounts-list">
+              ${nonCards.length
+                ? nonCards.map(accountCard).join('')
+                : empty('No hay cuentas', 'Carga datos de ejemplo para ver el comportamiento.')}
+            </div>
+          </article>
+          <article class="card">
+            <h2>Tarjetas</h2>
+            <div class="accounts-list">
+              ${cards.length
+                ? cards.map(accountCard).join('')
+                : empty('Sin tarjetas', 'Las compras en cuotas se gestionan mejor con cuentas de crédito.')}
+            </div>
+          </article>
+          <article class="card">
+            <h2>Resumen operativo</h2>
+            <div class="grid">${summaryBlock()}</div>
+          </article>
+        </section>`;
+    }
 
-  function openAdjustmentForm() {
-    UI.openSheet(Forms.adjustmentForm(state));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.getElementById('movForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      Engine.applyAdjustment(state, { accountId: fd.get('accountId'), newBalance: Number(fd.get('newBalance')), note: fd.get('note') });
-      persist(); UI.closeSheet(); renderContent(); UI.toast('Saldo ajustado');
-    };
-  }
+    function renderInstallments() {
+      return `
+        <section class="grid split">
+          <article class="card">
+            <div class="section-head">
+              <h2>Planes en cuotas</h2>
+              <span class="tag">${state.installmentPlans.length}</span>
+            </div>
+            <div class="list">
+              ${state.installmentPlans.length
+                ? state.installmentPlans.map(plan => {
+                    const rows = state.installments.filter(i=>i.planId===plan.id);
+                    const paid = rows.filter(r=>r.status==='paid').length;
+                    const pending = rows.filter(r=>r.status!=='paid').length;
+                    return `
+                      <div class="card" style="padding:12px;">
+                        <strong>${plan.merchant}</strong>
+                        <div class="subtle">${paid} pagadas · ${pending} pendientes · ${currency(plan.totalAmount)}</div>
+                        <div class="timeline" style="margin-top:10px;">
+                          ${rows.map(i => `
+                            <div class="timeline-row">
+                              <span>Cuota ${i.number}</span>
+                              <span>${i.dueMonth}</span>
+                              <span class="${i.status==='paid'?'income':i.status==='billed'?'warning':'muted'}">${i.status}</span>
+                              <strong>${currency(i.amount)}</strong>
+                            </div>`).join('')}
+                        </div>
+                      </div>`;
+                  }).join('')
+                : empty('Sin compras en cuotas', 'Registra una compra con tarjeta y más de 1 cuota.')}
+            </div>
+          </article>
+          <article class="card">
+            <div class="section-head">
+              <h2>Lógica aplicada</h2>
+              <span class="tag">Tarjetas</span>
+            </div>
+            <div class="list">
+              <div class="alert-row"><strong>1</strong><span>La compra consume cupo total inmediato.</span></div>
+              <div class="alert-row"><strong>2</strong><span>La deuda se descompone en cuotas por mes.</span></div>
+              <div class="alert-row"><strong>3</strong><span>El pago de tarjeta reduce deuda, no crea gasto consolidado nuevo.</span></div>
+              <div class="alert-row"><strong>4</strong><span>Se distingue deuda facturada y futura para lectura realista.</span></div>
+            </div>
+          </article>
+        </section>`;
+    }
 
-  function openScheduledForm(existing) {
-    UI.openSheet(Forms.scheduledForm(state, existing));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.getElementById('schedForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const dayOfMonth = Number(fd.get('dayOfMonth'));
-      state.scheduled.push({
-        id: DB.uid('sch'), name: fd.get('name'), amount: Number(fd.get('amount')),
-        categoryId: fd.get('categoryId'), accountId: fd.get('accountId'), frequency: fd.get('frequency'),
-        dayOfMonth, nextDate: DB.nextMonthlyDate(dayOfMonth), status: 'pending', paused: false
-      });
-      persist(); UI.closeSheet(); route = { name: 'agenda' }; agendaTab = 'programados'; renderShell(); UI.toast('Gasto programado creado');
-    };
-  }
+    function renderScheduled() {
+      return `
+        <section class="card">
+          <div class="section-head">
+            <h2>Gastos programados y recurrentes</h2>
+            <span class="tag">${state.recurringRules.length}</span>
+          </div>
+          <div class="list">
+            ${state.recurringRules.length
+              ? state.recurringRules.map(rule => `
+                <div class="tx-row">
+                  <strong>${rule.label}</strong>
+                  <span>${rule.frequency}</span>
+                  <span>${rule.nextOccurrenceAt}</span>
+                  <span class="${rule.status==='active'?'income':'muted'}">${rule.status}</span>
+                  <strong>${currency(rule.amount)}</strong>
+                </div>`).join('')
+              : empty('Sin reglas recurrentes', 'Usa el formulario de movimiento para crear un gasto con recurrencia.')}
+          </div>
+        </section>`;
+    }
 
-  function openPayPlan(planId, mode) {
-    const plan = state.installmentPlans.find(p => p.id === planId);
-    UI.openSheet(Forms.payPlanConfirm(state, plan, mode));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.getElementById('payForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      if (mode === 'all') Engine.payFullPlan(state, { planId, accountId: fd.get('accountId') });
-      else Engine.payInstallments(state, { planId, accountId: fd.get('accountId'), count: 1 });
-      persist(); UI.closeSheet(); renderContent(); UI.toast('Pago registrado');
-    };
-  }
+    function renderReports() {
+      const monthly = computeMonthlyBars();
+      return `
+        <section class="grid split">
+          <article class="card">
+            <div class="section-head">
+              <h2>Ingresos vs gastos</h2>
+              <span class="tag">6 meses</span>
+            </div>
+            <div class="chart">
+              ${monthly.map(m => `
+                <div class="bar ${m.type}" style="height:${m.height}%">
+                  <span class="bar-label">${m.label}</span>
+                </div>`).join('')}
+            </div>
+          </article>
+          <article class="card">
+            <div class="section-head">
+              <h2>Indicadores</h2>
+              <span class="tag">Análisis</span>
+            </div>
+            <div class="grid">
+              ${summaryBlock()}
+              <div class="alert-row">
+                <strong>Flujo</strong>
+                <span>${currency(getMetrics().netMonth)} en el mes actual</span>
+              </div>
+            </div>
+          </article>
+        </section>`;
+    }
 
-  function openAccountForm(accountId) {
-    const existing = accountId ? state.accounts.find(a => a.id === accountId) : null;
-    UI.openSheet(Forms.accountForm(state, existing));
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    const typeSel = document.getElementById('accType');
-    const creditFields = document.getElementById('creditFields');
-    typeSel.onchange = () => creditFields.classList.toggle('hidden', typeSel.value !== 'credito');
-    document.querySelectorAll('.swatch-pick').forEach(sw => sw.onclick = () => {
-      document.querySelectorAll('.swatch-pick').forEach(s => s.classList.remove('active'));
-      sw.classList.add('active');
-      document.querySelector('input[name=color]').value = sw.dataset.color;
-    });
-    document.getElementById('accForm').onsubmit = (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const type = fd.get('type');
-      if (existing) {
-        existing.name = fd.get('name'); existing.type = type; existing.color = fd.get('color');
-        if (type === 'credito') { existing.creditLimit = Number(fd.get('creditLimit') || 0); existing.billingDay = Number(fd.get('billingDay') || 5); }
-      } else {
-        const bal = Number(fd.get('balance') || 0);
-        const acc = {
-          id: DB.uid('acc'), name: fd.get('name'), type, initialBalance: bal, currentBalance: bal,
-          currency: 'CLP', color: fd.get('color'), active: true
+    function renderSettings() {
+      return `
+        <section class="grid split">
+          <article class="card">
+            <div class="section-head">
+              <h2>Seguridad y datos</h2>
+              <span class="tag">Local</span>
+            </div>
+            <div class="list">
+              <div class="alert-row">
+                <strong>Persistencia</strong>
+                <span>Los datos se guardan en localStorage en esta versión base.</span>
+              </div>
+              <div class="alert-row">
+                <strong>Offline</strong>
+                <span>La app shell queda disponible con service worker cuando se sirve por HTTP/HTTPS.</span>
+              </div>
+              <div class="alert-row">
+                <strong>Exportación</strong>
+                <span>Puedes exportar todos los datos a JSON para respaldo.</span>
+              </div>
+              <div class="alert-row">
+                <strong>Reset</strong>
+                <span>Borrar todo y empezar desde cero.</span>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <button class="btn danger" id="resetAppBtn">Reiniciar app</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="section-head">
+              <h2>Categorías</h2>
+              <span class="tag">${state.categories.length}</span>
+            </div>
+            <div class="list">
+              ${state.categories.map(cat => `
+                <div class="tx-row">
+                  <input type="text" value="${cat}" data-category-name="${cat}" />
+                  <button class="btn ghost" data-save-category="${cat}">Guardar</button>
+                  <button class="btn ghost" data-delete-category="${cat}">Eliminar</button>
+                </div>`).join('')}
+            </div>
+            <div style="margin-top:12px;">
+              <div class="field">
+                <label for="newCategory">Nueva categoría</label>
+                <input id="newCategory" type="text" placeholder="Ej: Mascotas" />
+              </div>
+              <button class="btn primary" id="addCategoryBtn">Agregar categoría</button>
+            </div>
+          </article>
+        </section>`;
+    }
+
+    function renderNav() {
+      const make = item => `
+        <button class="nav-btn ${currentScreen===item.id?'active':''}"
+                data-screen="${item.id}" title="${item.label}">
+          <span>${item.icon}</span>
+        </button>`;
+      sidebarNav.innerHTML = NAV.map(make).join('');
+      mobileNav.innerHTML = NAV.slice(0,5).map(item => `
+        <button class="${currentScreen===item.id?'active':''}" data-screen="${item.id}">
+          ${item.label}
+        </button>`).join('');
+
+      [...document.querySelectorAll('[data-screen]')].forEach(btn => {
+        btn.onclick = () => {
+          currentScreen = btn.dataset.screen;
+          render();
         };
-        if (type === 'credito') { acc.creditLimit = Number(fd.get('creditLimit') || 0); acc.usedCredit = 0; acc.billingDay = Number(fd.get('billingDay') || 5); }
-        state.accounts.push(acc);
+      });
+    }
+
+    function populateMovementForm() {
+      const accounts = [{ id:'', name:'Sin seleccionar' }, ...state.accounts];
+      sourceAccountId.innerHTML =
+        accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+      destinationAccountId.innerHTML =
+        accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+
+      category.innerHTML =
+        state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      movementTypeTabs.innerHTML = [
+        ['income','Ingreso'],
+        ['expense','Gasto'],
+        ['transfer','Transferencia'],
+        ['card_purchase','Compra TC'],
+        ['card_payment','Pago TC'],
+        ['balance_adjustment','Ajuste']
+      ].map(([id,label]) => `
+        <button type="button"
+                class="tab ${currentMovementKind===id?'active':''}"
+                data-kind="${id}">
+          ${label}
+        </button>`).join('');
+
+      [...movementTypeTabs.querySelectorAll('[data-kind]')].forEach(btn => {
+        btn.onclick = () => {
+          currentMovementKind = btn.dataset.kind;
+          populateMovementForm();
+          syncMovementFormByKind();
+        };
+      });
+
+      effectiveAt.value = todayISO();
+      syncMovementFormByKind();
+    }
+
+    function syncMovementFormByKind() {
+      installments.parentElement.classList
+        .toggle('hidden', currentMovementKind !== 'card_purchase');
+      frequency.parentElement.classList
+        .toggle('hidden', !['expense','income'].includes(currentMovementKind));
+
+      if (currentMovementKind === 'income') {
+        sourceAccountId.value = '';
       }
-      persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta guardada');
-    };
-    const del = document.getElementById('btnDeactivate');
-    if (del) del.onclick = () => {
-      if (confirm('¿Eliminar esta cuenta permanentemente? Se conserva su historial de movimientos.')) {
-        Engine.deleteAccount(state, existing.id); persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta eliminada');
+      if (currentMovementKind === 'expense') {
+        destinationAccountId.value = '';
       }
-    };
-  }
+    }
 
-  function openMovementDetail(movId) {
-    const m = state.movements.find(x => x.id === movId);
-    if (!m) return;
-    const acc = state.accounts.find(a => a.id === m.accountId);
-    UI.openSheet(`
-      <div class="sheet-head"><h2>${Views.typeLabel(m.type)}</h2><button class="icon-btn" id="sheetClose">${UI.icon('close')}</button></div>
-      <div class="stub" style="--bar:${acc ? acc.color : '#999'};margin-bottom:16px;">
-        <div class="label">${m.description || Views.typeLabel(m.type)}</div>
-        <div class="amount num">${Calc.fmt(m.amount)}</div>
-        <div class="sub">${m.date} · ${acc ? acc.name : ''}</div>
-      </div>
-      <button class="btn danger block" id="btnDeleteMov">${UI.icon('trash')} Eliminar movimiento</button>
-    `);
-    document.getElementById('sheetClose').onclick = UI.closeSheet;
-    document.getElementById('btnDeleteMov').onclick = () => {
-      if (confirm('¿Eliminar este movimiento? Se revertirá su efecto en el saldo de la cuenta.')) {
-        Engine.deleteMovement(state, movId); persist(); UI.closeSheet(); renderContent(); UI.toast('Movimiento eliminado');
+    function bindScreenActions() {
+      // Diálogos de movimiento
+      document.querySelectorAll('[data-open-dialog]')
+        .forEach(btn => btn.onclick = openMovementDialog);
+
+      // Eliminar cuentas
+      document.querySelectorAll('[data-delete-account]').forEach(btn => {
+        btn.onclick = () => deleteAccount(btn.dataset.deleteAccount);
+      });
+
+      // Reset app
+      const resetBtn = document.getElementById('resetAppBtn');
+      if (resetBtn) {
+        resetBtn.onclick = resetApp;
       }
+
+      // Categorías
+      const addCat = document.getElementById('addCategoryBtn');
+      if (addCat) {
+        addCat.onclick = addCategory;
+      }
+
+      document.querySelectorAll('[data-save-category]').forEach(btn => {
+        btn.onclick = () => updateCategory(btn.dataset.saveCategory);
+      });
+
+      document.querySelectorAll('[data-delete-category]').forEach(btn => {
+        btn.onclick = () => deleteCategory(btn.dataset.deleteCategory);
+      });
+    }
+
+    function openMovementDialog() {
+      populateMovementForm();
+      movementDialog.showModal();
+    }
+
+    function addTransactionFromForm(ev) {
+      ev.preventDefault();
+      const amount = Number(document.getElementById('amount').value || 0);
+      if (!amount || amount <= 0) return;
+
+      const tx = {
+        id: uid(),
+        kind: currentMovementKind,
+        amount,
+        currency:'CLP',
+        effectiveAt: document.getElementById('effectiveAt').value,
+        recordedAt: new Date().toISOString(),
+        sourceAccountId: sourceAccountId.value || undefined,
+        destinationAccountId: destinationAccountId.value || undefined,
+        category: category.value,
+        status: status.value,
+        description: description.value.trim(),
+        origin:'manual'
+      };
+
+      if (currentMovementKind === 'transfer' &&
+          (!tx.sourceAccountId ||
+           !tx.destinationAccountId ||
+           tx.sourceAccountId === tx.destinationAccountId)) {
+        alert('La transferencia requiere origen y destino distintos.');
+        return;
+      }
+      if (['expense','card_purchase','card_payment'].includes(currentMovementKind) &&
+          !tx.sourceAccountId) {
+        alert('Debes seleccionar una cuenta origen.');
+        return;
+      }
+      if (['income'].includes(currentMovementKind) &&
+          !tx.destinationAccountId) {
+        alert('Debes seleccionar una cuenta destino.');
+        return;
+      }
+
+      state.transactions.unshift(tx);
+      logAudit('create','transaction',tx.id,null,tx);
+
+      if (currentMovementKind === 'card_purchase' &&
+          Number(installments.value || 1) > 1) {
+        const totalInstallments = Number(installments.value || 1);
+        const planId = uid();
+        tx.installmentPlanId = planId;
+
+        const plan = {
+          id: planId,
+          accountId: tx.sourceAccountId,
+          merchant: tx.description || 'Compra en cuotas',
+          totalAmount: tx.amount,
+          totalInstallments,
+          firstChargeDate: tx.effectiveAt,
+          billingCycleAnchor: state.accounts.find(a => a.id === tx.sourceAccountId)?.billingDay || 1,
+          status:'active'
+        };
+        state.installmentPlans.unshift(plan);
+
+        const base = Math.floor(tx.amount / totalInstallments);
+        const rem = tx.amount - (base * totalInstallments);
+
+        for (let i=0;i<totalInstallments;i++) {
+          const amountInstallment = i === totalInstallments -1 ? base + rem : base;
+          state.installments.push({
+            id: uid(), planId, accountId: tx.sourceAccountId,
+            number: i+1, amount: amountInstallment,
+            dueMonth: monthOffset(i),
+            statementMonth: monthOffset(i),
+            status: i===0 ? 'billed' : 'pending'
+          });
+        }
+      }
+
+      if (frequency.value !== 'none' &&
+          ['income','expense'].includes(currentMovementKind)) {
+        const rule = {
+          id: uid(),
+          label: tx.description || tx.category,
+          type: currentMovementKind,
+          amount: tx.amount,
+          frequency: frequency.value,
+          interval:1,
+          nextOccurrenceAt: tx.effectiveAt,
+          accountId: tx.sourceAccountId || tx.destinationAccountId,
+          category: tx.category,
+          autoGenerate:true,
+          status:'active'
+        };
+        state.recurringRules.unshift(rule);
+        logAudit('create','recurringRule',rule.id,null,rule);
+      }
+
+      movementDialog.close();
+      movementForm.reset();
+      render();
+    }
+
+    function deleteAccount(accountId) {
+      const account = state.accounts.find(a => a.id === accountId);
+      if (!account) return;
+
+      const hasTx = state.transactions.some(
+        t => t.sourceAccountId === accountId || t.destinationAccountId === accountId
+      );
+      const hasInstallments = state.installments.some(i => i.accountId === accountId);
+      const hasRecurring = state.recurringRules.some(r => r.accountId === accountId);
+
+      if (hasTx || hasInstallments || hasRecurring) {
+        alert('No puedes eliminar una cuenta con movimientos, cuotas o programaciones asociadas. Desactívala en su lugar.');
+        return;
+      }
+
+      if (!confirm(`Eliminar la cuenta "${account.name}" de forma permanente?`)) {
+        return;
+      }
+
+      const before = { ...account };
+      state.accounts = state.accounts.filter(a => a.id !== accountId);
+      logAudit('delete', 'account', accountId, before, null);
+      saveState();
+      render();
+    }
+
+    function addCategory() {
+      const input = document.getElementById('newCategory');
+      const name = (input?.value || '').trim();
+      if (!name) return;
+
+      if (state.categories.includes(name)) {
+        alert('Ya existe una categoría con ese nombre.');
+        return;
+      }
+
+      state.categories.push(name);
+      logAudit('create', 'category', name, null, { name });
+      saveState();
+      render();
+    }
+
+    function updateCategory(oldName) {
+      const input = document.querySelector(`input[data-category-name="${oldName}"]`);
+      if (!input) return;
+
+      const newName = input.value.trim();
+      if (!newName || newName === oldName) return;
+
+      if (state.categories.includes(newName)) {
+        alert('Ya existe otra categoría con ese nombre.');
+        return;
+      }
+
+      state.transactions.forEach(tx => {
+        if (tx.category === oldName) tx.category = newName;
+      });
+
+      const index = state.categories.indexOf(oldName);
+      if (index !== -1) state.categories[index] = newName;
+
+      logAudit('update', 'category', oldName, { name: oldName }, { name: newName });
+      saveState();
+      render();
+    }
+
+    function deleteCategory(name) {
+      const used = state.transactions.some(tx => tx.category === name);
+      if (used) {
+        alert('No puedes eliminar una categoría que tiene movimientos. Cambia primero la categoría de esos movimientos.');
+        return;
+      }
+
+      if (!confirm(`Eliminar la categoría "${name}"?`)) return;
+
+      state.categories = state.categories.filter(c => c !== name);
+      logAudit('delete', 'category', name, { name }, null);
+      saveState();
+      render();
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `nexo-finanzas-backup-${todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function setThemeToggle() {
+      document.documentElement.setAttribute('data-theme', state.theme || 'dark');
+      themeToggle.onclick = () => {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        saveState();
+        render();
+      };
+    }
+
+    async function registerSW() {
+      if ('serviceWorker' in navigator) {
+        try { await navigator.serviceWorker.register('./service-worker.js'); } catch {}
+      }
+    }
+
+    function render() {
+      recalculate();
+      document.documentElement.setAttribute('data-theme', state.theme || 'dark');
+      screenTitle.textContent = NAV.find(n=>n.id===currentScreen)?.label || 'Inicio';
+      connectionState.textContent = navigator.onLine ? 'Conectado' : 'Offline';
+      connectionState.className = 'pill ' + (navigator.onLine ? 'status-online' : 'status-offline');
+
+      renderNav();
+      populateMovementForm();
+
+      const renderers = {
+        dashboard: renderDashboard,
+        movements: renderMovements,
+        accounts: renderAccounts,
+        installments: renderInstallments,
+        scheduled: renderScheduled,
+        reports: renderReports,
+        settings: renderSettings,
+      };
+      appContent.innerHTML = renderers[currentScreen]();
+      bindScreenActions();
+    }
+
+    seedBtn.onclick = () => {
+      state = seededData();
+      saveState();
+      render();
     };
-  }
-
-  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
-
-  /* ---------------- Online/offline ---------------- */
-  window.addEventListener('online', () => { const p = document.getElementById('statusPill'); if (p) { p.classList.remove('offline'); p.innerHTML = '<span class="status-dot"></span>En línea'; } });
-  window.addEventListener('offline', () => { const p = document.getElementById('statusPill'); if (p) { p.classList.add('offline'); p.innerHTML = '<span class="status-dot"></span>Sin conexión'; } });
-
-  /* ---------------- Service worker ---------------- */
-  /* Service worker deshabilitado en esta vista previa; se activa en el proyecto real descargado. */
-
-  renderShell();
-})();
-
-</script>
+    exportBtn.onclick = exportJSON;
+    newMovementBtn.onclick = openMovementDialog;
+    fabBtn.onclick = openMovementDialog;
+    movementForm.addEventListener('submit', addTransactionFromForm);
+    window.addEventListener('online', render);
+    window.addEventListener('offline', render);
+    setThemeToggle();
+    registerSW();
+    render();
+  </script>
 </body>
 </html>
