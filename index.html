@@ -402,6 +402,7 @@
   <nav class="mobile-nav" id="mobileNav" aria-label="Navegación móvil"></nav>
   <button class="fab" id="fabBtn" aria-label="Nuevo movimiento">+</button>
 
+  <!-- Diálogo de movimientos -->
   <dialog id="movementDialog">
     <form method="dialog" id="movementForm">
       <div class="modal-head">
@@ -463,6 +464,74 @@
       <div class="modal-foot">
         <button class="btn ghost" value="cancel">Cancelar</button>
         <button class="btn primary" id="saveMovementBtn" value="default">Guardar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Diálogo de nueva cuenta -->
+  <dialog id="accountDialog">
+    <form method="dialog" id="accountForm">
+      <div class="modal-head">
+        <div>
+          <strong>Crear nueva cuenta</strong>
+          <div class="subtle">Débito, vista, corriente, efectivo, ahorro o tarjeta</div>
+        </div>
+        <button class="btn ghost" value="cancel">Cerrar</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field">
+            <label for="accountName">Nombre</label>
+            <input id="accountName" name="accountName" type="text" required placeholder="Ej: Banco Estado débito" />
+          </div>
+          <div class="field">
+            <label for="accountType">Tipo</label>
+            <select id="accountType" name="accountType" required>
+              <option value="debit">Cuenta débito</option>
+              <option value="vista">Cuenta vista</option>
+              <option value="checking">Cuenta corriente</option>
+              <option value="cash">Efectivo</option>
+              <option value="credit">Tarjeta de crédito</option>
+              <option value="savings">Ahorro</option>
+              <option value="custom">Personalizada</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="accountCurrency">Moneda</label>
+            <input id="accountCurrency" name="accountCurrency" type="text" value="CLP" />
+          </div>
+          <div class="field">
+            <label for="accountInitialBalance">Saldo inicial</label>
+            <input id="accountInitialBalance" name="accountInitialBalance" type="number" step="0.01" value="0" />
+          </div>
+          <div class="field">
+            <label for="accountColor">Color</label>
+            <input id="accountColor" name="accountColor" type="color" value="#14b8a6" />
+          </div>
+          <div class="field">
+            <label for="accountStatus">Estado</label>
+            <select id="accountStatus" name="accountStatus">
+              <option value="active">Activa</option>
+              <option value="inactive">Inactiva</option>
+            </select>
+          </div>
+          <div class="field span-2">
+            <label for="accountCreditLimit">Cupo tarjeta (solo crédito)</label>
+            <input id="accountCreditLimit" name="accountCreditLimit" type="number" step="0.01" value="0" />
+          </div>
+          <div class="field">
+            <label for="accountBillingDay">Día de facturación</label>
+            <input id="accountBillingDay" name="accountBillingDay" type="number" min="1" max="31" />
+          </div>
+          <div class="field">
+            <label for="accountDueDay">Día de vencimiento</label>
+            <input id="accountDueDay" name="accountDueDay" type="number" min="1" max="31" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" value="cancel">Cancelar</button>
+        <button class="btn primary" id="saveAccountBtn" value="default">Crear cuenta</button>
       </div>
     </form>
   </dialog>
@@ -1158,11 +1227,14 @@
       return `
         <section class="grid cards-3">
           <article class="card">
-            <h2>Cuentas líquidas</h2>
+            <div class="section-head">
+              <h2>Cuentas líquidas</h2>
+              <button class="btn primary" id="newAccountBtn">Nueva cuenta</button>
+            </div>
             <div class="accounts-list">
               ${nonCards.length
                 ? nonCards.map(accountCard).join('')
-                : empty('No hay cuentas', 'Carga datos de ejemplo para ver el comportamiento.')}
+                : empty('No hay cuentas','Carga datos de ejemplo o crea tu primera cuenta.')}
             </div>
           </article>
           <article class="card">
@@ -1170,7 +1242,7 @@
             <div class="accounts-list">
               ${cards.length
                 ? cards.map(accountCard).join('')
-                : empty('Sin tarjetas', 'Las compras en cuotas se gestionan mejor con cuentas de crédito.')}
+                : empty('Sin tarjetas','Las compras en cuotas se gestionan mejor con cuentas de crédito.')}
             </div>
           </article>
           <article class="card">
@@ -1411,6 +1483,12 @@
       document.querySelectorAll('[data-open-dialog]')
         .forEach(btn => btn.onclick = openMovementDialog);
 
+      // Nueva cuenta
+      const newAccountBtn = document.getElementById('newAccountBtn');
+      if (newAccountBtn) {
+        newAccountBtn.onclick = openAccountDialog;
+      }
+
       // Eliminar cuentas
       document.querySelectorAll('[data-delete-account]').forEach(btn => {
         btn.onclick = () => deleteAccount(btn.dataset.deleteAccount);
@@ -1440,6 +1518,15 @@
     function openMovementDialog() {
       populateMovementForm();
       movementDialog.showModal();
+    }
+
+    function openAccountDialog() {
+      accountForm.reset();
+      accountCurrency.value = 'CLP';
+      accountColor.value = '#14b8a6';
+      accountStatus.value = 'active';
+      accountType.value = 'debit';
+      accountDialog.showModal();
     }
 
     function addTransactionFromForm(ev) {
@@ -1537,6 +1624,53 @@
 
       movementDialog.close();
       movementForm.reset();
+      render();
+    }
+
+    function createAccountFromForm(ev) {
+      ev.preventDefault();
+      const name = (accountName.value || '').trim();
+      const type = accountType.value;
+      if (!name) {
+        alert('La cuenta necesita un nombre.');
+        return;
+      }
+
+      const initialBalance = Number(accountInitialBalance.value || 0);
+      const currencyCode = (accountCurrency.value || 'CLP').trim() || 'CLP';
+      const color = accountColor.value || '#14b8a6';
+      const statusVal = accountStatus.value || 'active';
+      const creditLimitVal = Number(accountCreditLimit.value || 0) || 0;
+      const billingDayVal = accountBillingDay.value ? Number(accountBillingDay.value) : undefined;
+      const dueDayVal = accountDueDay.value ? Number(accountDueDay.value) : undefined;
+
+      if (type === 'credit' && creditLimitVal <= 0) {
+        alert('Las tarjetas de crédito necesitan un cupo total mayor a cero.');
+        return;
+      }
+
+      const account = {
+        id: uid(),
+        name,
+        type,
+        initialBalance,
+        currentBalance: initialBalance,
+        currency: currencyCode,
+        color,
+        status: statusVal
+      };
+
+      if (type === 'credit') {
+        account.creditLimit = creditLimitVal;
+        if (billingDayVal) account.billingDay = billingDayVal;
+        if (dueDayVal) account.dueDay = dueDayVal;
+      }
+
+      state.accounts.push(account);
+      logAudit('create', 'account', account.id, null, account);
+      saveState();
+      accountDialog.close();
+      accountForm.reset();
       render();
     }
 
@@ -1677,6 +1811,7 @@
     newMovementBtn.onclick = openMovementDialog;
     fabBtn.onclick = openMovementDialog;
     movementForm.addEventListener('submit', addTransactionFromForm);
+    accountForm.addEventListener('submit', createAccountFromForm);
     window.addEventListener('online', render);
     window.addEventListener('offline', render);
     setThemeToggle();
