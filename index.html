@@ -390,9 +390,6 @@
         </div>
         <div class="topbar-actions">
           <span class="pill" id="connectionState">Conectado</span>
-          <button class="btn ghost" id="seedBtn">Cargar ejemplo</button>
-          <button class="btn ghost" id="exportBtn">Exportar JSON</button>
-          <button class="btn primary" id="newMovementBtn">+ Nuevo movimiento</button>
         </div>
       </header>
       <div class="content" id="appContent"></div>
@@ -755,6 +752,15 @@
         alerts: [],
         auditLog: [],
       };
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `nexo-finanzas-backup-${todayISO()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
     }
 
     function recalculate() {
@@ -1211,7 +1217,6 @@
         <section class="card">
           <div class="section-head">
             <h2>Historial de movimientos</h2>
-            <button class="btn primary" data-open-dialog>Nuevo</button>
           </div>
           <div class="subtle" style="margin-bottom:12px;">
             Incluye ingresos, gastos, transferencias, compras con tarjeta, pagos y ajustes.
@@ -1374,15 +1379,17 @@
                 <span>La app shell queda disponible con service worker cuando se sirve por HTTP/HTTPS.</span>
               </div>
               <div class="alert-row">
-                <strong>Exportación</strong>
-                <span>Puedes exportar todos los datos a JSON para respaldo.</span>
+                <strong>Backup</strong>
+                <span>Exporta tu estado completo a JSON y carga datos de ejemplo para probar la app.</span>
               </div>
               <div class="alert-row">
                 <strong>Reset</strong>
                 <span>Borrar todo y empezar desde cero.</span>
               </div>
             </div>
-            <div style="margin-top:12px;">
+            <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;">
+              <button class="btn ghost" id="seedBtn">Cargar ejemplo</button>
+              <button class="btn ghost" id="exportBtn">Exportar JSON</button>
               <button class="btn danger" id="resetAppBtn">Reiniciar app</button>
             </div>
           </article>
@@ -1503,20 +1510,19 @@
     }
 
     function bindScreenActions() {
-      // Diálogos de movimiento
-      document.querySelectorAll('[data-open-dialog]')
-        .forEach(btn => btn.onclick = openMovementDialog);
-
       // Nueva cuenta
       const newAccountBtn = document.getElementById('newAccountBtn');
       if (newAccountBtn) newAccountBtn.onclick = openAccountDialog;
 
-      // Eliminar cuentas desde Ajustes
-      document.querySelectorAll('[data-delete-account-settings]').forEach(btn => {
-        btn.onclick = () => deleteAccount(btn.dataset.deleteAccountSettings);
-      });
-
-      // Reset app
+      // Ajustes: seed, export, reset
+      const seedBtnEl = document.getElementById('seedBtn');
+      if (seedBtnEl) seedBtnEl.onclick = () => {
+        state = seededData();
+        saveState();
+        render();
+      };
+      const exportBtnEl = document.getElementById('exportBtn');
+      if (exportBtnEl) exportBtnEl.onclick = exportJSON;
       const resetBtn = document.getElementById('resetAppBtn');
       if (resetBtn) resetBtn.onclick = resetApp;
 
@@ -1529,6 +1535,11 @@
       });
       document.querySelectorAll('[data-delete-category]').forEach(btn => {
         btn.onclick = () => deleteCategory(btn.dataset.deleteCategory);
+      });
+
+      // Eliminar cuentas desde Ajustes
+      document.querySelectorAll('[data-delete-account-settings]').forEach(btn => {
+        btn.onclick = () => deleteAccount(btn.dataset.deleteAccountSettings);
       });
 
       // Editar / eliminar movimientos
@@ -1843,15 +1854,6 @@
       render();
     }
 
-    function exportJSON() {
-      const blob = new Blob([JSON.stringify(state, null, 2)], { type:'application/json' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `nexo-finanzas-backup-${todayISO()}.json`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
     function setThemeToggle() {
       document.documentElement.setAttribute('data-theme', state.theme || 'dark');
       themeToggle.onclick = () => {
@@ -1890,13 +1892,6 @@
       bindScreenActions();
     }
 
-    seedBtn.onclick = () => {
-      state = seededData();
-      saveState();
-      render();
-    };
-    exportBtn.onclick = exportJSON;
-    newMovementBtn.onclick = openMovementDialog;
     fabBtn.onclick = openMovementDialog;
     movementForm.addEventListener('submit', addTransactionFromForm);
     accountForm.addEventListener('submit', createAccountFromForm);
