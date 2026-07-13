@@ -570,6 +570,7 @@
     let state = loadState();
     let currentScreen = 'dashboard';
     let currentMovementKind = 'expense';
+    let editingTxId = null;
 
     function defaultState() {
       return {
@@ -1016,7 +1017,6 @@
             <div>
               <strong>${currency(m.availableLimit)}</strong>
               <div class="subtle">disponible</div>
-              <button class="btn ghost" data-delete-account="${a.id}">Eliminar</button>
             </div>
           </div>`;
       }
@@ -1032,7 +1032,6 @@
           </div>
           <div>
             <span class="tag">${a.status}</span>
-            <button class="btn ghost" data-delete-account="${a.id}">Eliminar</button>
           </div>
         </div>`;
     }
@@ -1049,7 +1048,7 @@
       })[tx.kind] || tx.kind;
 
       return `
-        <div class="tx-row">
+        <div class="tx-row" data-tx-id="${tx.id}">
           <div>
             <strong>${tx.description || label}</strong>
             <div class="subtle">${label} · ${tx.category || 'Sin categoría'}</div>
@@ -1057,7 +1056,11 @@
           <span>${tx.effectiveAt}</span>
           <span>${accName(tx.sourceAccountId)}${tx.destinationAccountId ? ' → ' + accName(tx.destinationAccountId) : ''}</span>
           <span class="${tx.kind==='income'?'income':tx.kind==='expense'?'expense':'muted'}">${tx.status}</span>
-          <strong>${currency(tx.amount, tx.currency || 'CLP')}</strong>
+          <div style="display:flex; gap:6px; align-items:center; justify-content:flex-end;">
+            <button class="btn ghost" data-edit-tx="${tx.id}" title="Editar" style="padding:4px 8px;font-size:12px;">···</button>
+            <button class="btn ghost" data-delete-tx="${tx.id}" title="Eliminar" style="padding:4px 8px;font-size:12px;">×</button>
+            <strong>${currency(tx.amount, tx.currency || 'CLP')}</strong>
+          </div>
         </div>`;
     }
 
@@ -1405,6 +1408,27 @@
               <button class="btn primary" id="addCategoryBtn">Agregar categoría</button>
             </div>
           </article>
+
+          <article class="card" style="grid-column: span 2;">
+            <div class="section-head">
+              <h2>Gestión de cuentas</h2>
+              <span class="tag">${state.accounts.length}</span>
+            </div>
+            <div class="list">
+              ${state.accounts.map(a => `
+                <div class="tx-row">
+                  <div>
+                    <strong>${a.name}</strong>
+                    <div class="subtle">${ACCOUNT_TYPES.find(t => t[0] === a.type)?.[1] || a.type}</div>
+                  </div>
+                  <span>${currency(a.currentBalance, a.currency)}</span>
+                  <span class="muted">${a.status}</span>
+                  <button class="btn ghost" data-delete-account-settings="${a.id}" title="Eliminar cuenta" style="padding:4px 8px;font-size:12px;">
+                    &minus;
+                  </button>
+                </div>`).join('')}
+            </div>
+          </article>
         </section>`;
     }
 
@@ -1485,37 +1509,39 @@
 
       // Nueva cuenta
       const newAccountBtn = document.getElementById('newAccountBtn');
-      if (newAccountBtn) {
-        newAccountBtn.onclick = openAccountDialog;
-      }
+      if (newAccountBtn) newAccountBtn.onclick = openAccountDialog;
 
-      // Eliminar cuentas
-      document.querySelectorAll('[data-delete-account]').forEach(btn => {
-        btn.onclick = () => deleteAccount(btn.dataset.deleteAccount);
+      // Eliminar cuentas desde Ajustes
+      document.querySelectorAll('[data-delete-account-settings]').forEach(btn => {
+        btn.onclick = () => deleteAccount(btn.dataset.deleteAccountSettings);
       });
 
       // Reset app
       const resetBtn = document.getElementById('resetAppBtn');
-      if (resetBtn) {
-        resetBtn.onclick = resetApp;
-      }
+      if (resetBtn) resetBtn.onclick = resetApp;
 
       // Categorías
       const addCat = document.getElementById('addCategoryBtn');
-      if (addCat) {
-        addCat.onclick = addCategory;
-      }
+      if (addCat) addCat.onclick = addCategory;
 
       document.querySelectorAll('[data-save-category]').forEach(btn => {
         btn.onclick = () => updateCategory(btn.dataset.saveCategory);
       });
-
       document.querySelectorAll('[data-delete-category]').forEach(btn => {
         btn.onclick = () => deleteCategory(btn.dataset.deleteCategory);
+      });
+
+      // Editar / eliminar movimientos
+      document.querySelectorAll('[data-edit-tx]').forEach(btn => {
+        btn.onclick = () => openEditTransaction(btn.dataset.editTx);
+      });
+      document.querySelectorAll('[data-delete-tx]').forEach(btn => {
+        btn.onclick = () => deleteTransaction(btn.dataset.deleteTx);
       });
     }
 
     function openMovementDialog() {
+      editingTxId = null;
       populateMovementForm();
       movementDialog.showModal();
     }
@@ -1529,99 +1555,130 @@
       accountDialog.showModal();
     }
 
+    function openEditTransaction(txId) {
+      const tx = state.transactions.find(t => t.id === txId);
+      if (!tx) return;
+      editingTxId = txId;
+      currentMovementKind = tx.kind;
+
+      populateMovementForm();
+      amount.value = tx.amount;
+      effectiveAt.value = tx.effectiveAt;
+      sourceAccountId.value = tx.sourceAccountId || '';
+      destinationAccountId.value = tx.destinationAccountId || '';
+      category.value = tx.category || state.categories[0];
+      status.value = tx.status;
+      description.value = tx.description || '';
+      installments.value = tx.installmentPlanId
+        ? state.installmentPlans.find(p=>p.id===tx.installmentPlanId)?.totalInstallments || 1
+        : 1;
+      frequency.value = 'none';
+
+      movementDialog.showModal();
+    }
+
     function addTransactionFromForm(ev) {
       ev.preventDefault();
-      const amount = Number(document.getElementById('amount').value || 0);
-      if (!amount || amount <= 0) return;
+      const amountVal = Number(amount.value || 0);
+      if (!amountVal || amountVal <= 0) return;
 
-      const tx = {
-        id: uid(),
+      const baseTx = {
         kind: currentMovementKind,
-        amount,
+        amount: amountVal,
         currency:'CLP',
-        effectiveAt: document.getElementById('effectiveAt').value,
-        recordedAt: new Date().toISOString(),
+        effectiveAt: effectiveAt.value,
         sourceAccountId: sourceAccountId.value || undefined,
         destinationAccountId: destinationAccountId.value || undefined,
         category: category.value,
         status: status.value,
-        description: description.value.trim(),
-        origin:'manual'
+        description: description.value.trim()
       };
 
       if (currentMovementKind === 'transfer' &&
-          (!tx.sourceAccountId ||
-           !tx.destinationAccountId ||
-           tx.sourceAccountId === tx.destinationAccountId)) {
+          (!baseTx.sourceAccountId ||
+           !baseTx.destinationAccountId ||
+           baseTx.sourceAccountId === baseTx.destinationAccountId)) {
         alert('La transferencia requiere origen y destino distintos.');
         return;
       }
       if (['expense','card_purchase','card_payment'].includes(currentMovementKind) &&
-          !tx.sourceAccountId) {
+          !baseTx.sourceAccountId) {
         alert('Debes seleccionar una cuenta origen.');
         return;
       }
       if (['income'].includes(currentMovementKind) &&
-          !tx.destinationAccountId) {
+          !baseTx.destinationAccountId) {
         alert('Debes seleccionar una cuenta destino.');
         return;
       }
 
-      state.transactions.unshift(tx);
-      logAudit('create','transaction',tx.id,null,tx);
-
-      if (currentMovementKind === 'card_purchase' &&
-          Number(installments.value || 1) > 1) {
-        const totalInstallments = Number(installments.value || 1);
-        const planId = uid();
-        tx.installmentPlanId = planId;
-
-        const plan = {
-          id: planId,
-          accountId: tx.sourceAccountId,
-          merchant: tx.description || 'Compra en cuotas',
-          totalAmount: tx.amount,
-          totalInstallments,
-          firstChargeDate: tx.effectiveAt,
-          billingCycleAnchor: state.accounts.find(a => a.id === tx.sourceAccountId)?.billingDay || 1,
-          status:'active'
+      if (editingTxId) {
+        const tx = state.transactions.find(t => t.id === editingTxId);
+        if (!tx) return;
+        const before = { ...tx };
+        Object.assign(tx, baseTx);
+        tx.updatedAt = new Date().toISOString();
+        logAudit('update','transaction',tx.id,before,tx);
+      } else {
+        const tx = {
+          id: uid(),
+          ...baseTx,
+          recordedAt: new Date().toISOString(),
+          origin:'manual'
         };
-        state.installmentPlans.unshift(plan);
+        state.transactions.unshift(tx);
+        logAudit('create','transaction',tx.id,null,tx);
 
-        const base = Math.floor(tx.amount / totalInstallments);
-        const rem = tx.amount - (base * totalInstallments);
+        if (currentMovementKind === 'card_purchase' && Number(installments.value || 1) > 1) {
+          const totalInstallments = Number(installments.value || 1);
+          const planId = uid();
+          tx.installmentPlanId = planId;
+          const plan = {
+            id: planId,
+            accountId: tx.sourceAccountId,
+            merchant: tx.description || 'Compra en cuotas',
+            totalAmount: tx.amount,
+            totalInstallments,
+            firstChargeDate: tx.effectiveAt,
+            billingCycleAnchor: state.accounts.find(a => a.id === tx.sourceAccountId)?.billingDay || 1,
+            status:'active'
+          };
+          state.installmentPlans.unshift(plan);
+          const base = Math.floor(tx.amount / totalInstallments);
+          const rem = tx.amount - (base * totalInstallments);
+          for (let i=0;i<totalInstallments;i++) {
+            const amountInstallment = i === totalInstallments -1 ? base + rem : base;
+            state.installments.push({
+              id: uid(), planId, accountId: tx.sourceAccountId,
+              number: i+1, amount: amountInstallment,
+              dueMonth: monthOffset(i),
+              statementMonth: monthOffset(i),
+              status: i===0 ? 'billed' : 'pending'
+            });
+          }
+        }
 
-        for (let i=0;i<totalInstallments;i++) {
-          const amountInstallment = i === totalInstallments -1 ? base + rem : base;
-          state.installments.push({
-            id: uid(), planId, accountId: tx.sourceAccountId,
-            number: i+1, amount: amountInstallment,
-            dueMonth: monthOffset(i),
-            statementMonth: monthOffset(i),
-            status: i===0 ? 'billed' : 'pending'
-          });
+        if (frequency.value !== 'none' &&
+            ['income','expense'].includes(currentMovementKind)) {
+          const rule = {
+            id: uid(),
+            label: baseTx.description || baseTx.category,
+            type: currentMovementKind,
+            amount: baseTx.amount,
+            frequency: frequency.value,
+            interval:1,
+            nextOccurrenceAt: baseTx.effectiveAt,
+            accountId: baseTx.sourceAccountId || baseTx.destinationAccountId,
+            category: baseTx.category,
+            autoGenerate:true,
+            status:'active'
+          };
+          state.recurringRules.unshift(rule);
+          logAudit('create','recurringRule',rule.id,null,rule);
         }
       }
 
-      if (frequency.value !== 'none' &&
-          ['income','expense'].includes(currentMovementKind)) {
-        const rule = {
-          id: uid(),
-          label: tx.description || tx.category,
-          type: currentMovementKind,
-          amount: tx.amount,
-          frequency: frequency.value,
-          interval:1,
-          nextOccurrenceAt: tx.effectiveAt,
-          accountId: tx.sourceAccountId || tx.destinationAccountId,
-          category: tx.category,
-          autoGenerate:true,
-          status:'active'
-        };
-        state.recurringRules.unshift(rule);
-        logAudit('create','recurringRule',rule.id,null,rule);
-      }
-
+      editingTxId = null;
       movementDialog.close();
       movementForm.reset();
       render();
@@ -1696,6 +1753,37 @@
       const before = { ...account };
       state.accounts = state.accounts.filter(a => a.id !== accountId);
       logAudit('delete', 'account', accountId, before, null);
+      saveState();
+      render();
+    }
+
+    function deleteTransaction(txId) {
+      const tx = state.transactions.find(t => t.id === txId);
+      if (!tx) return;
+
+      if (tx.installmentPlanId) {
+        const plan = state.installmentPlans.find(p => p.id === tx.installmentPlanId);
+        if (plan) {
+          const beforePlan = { ...plan };
+          plan.status = 'cancelled';
+          logAudit('update','installmentPlan',plan.id,beforePlan,plan);
+        }
+        state.installments
+          .filter(i => i.planId === tx.installmentPlanId)
+          .forEach(i => {
+            const beforeI = { ...i };
+            i.status = 'cancelled';
+            logAudit('update','installment',i.id,beforeI,i);
+          });
+      }
+
+      if (!confirm('Eliminar este movimiento? Esta acción afectará tus balances.')) {
+        return;
+      }
+
+      const before = { ...tx };
+      tx.status = 'cancelled';
+      logAudit('update','transaction',tx.id,before,tx);
       saveState();
       render();
     }
