@@ -1161,7 +1161,7 @@ const Views = (() => {
       <div class="card-head"><h3>Datos</h3></div>
       <div class="btn-row">
         <button class="btn" id="btnExport">${icon('download')} Exportar CSV</button>
-        <button class="btn danger" id="btnReset">${icon('reset')} Restablecer datos de ejemplo</button>         <button class="btn danger" id="btnNuevoInicio" style="border-color:var(--expense);border-width:2px;">${icon('trash')} Iniciar desde cero</button>
+        <button class="btn danger" id="btnReset">${icon('reset')} Restablecer datos de ejemplo</button>
       </div>
       <p class="hint">Tus datos se guardan solo en este dispositivo (localStorage). Exportar te permite respaldarlos.</p>
     </div>
@@ -1321,7 +1321,7 @@ const Forms = (() => {
       </div>
       <div class="field"><label>Color</label>${colorSwatches(a.color)}<input type="hidden" name="color" value="${a.color}"></div>
       <button class="btn primary block" type="submit">Guardar cuenta</button>
-      ${existing ? `<button type="button" class="btn danger block" id="btnDeactivate" style="margin-top:8px;">Eliminar cuenta</button>` : ''}
+      ${existing ? `<button type="button" class="btn danger block" id="btnDeactivate" style="margin-top:8px;">Desactivar cuenta</button>` : ''}
     </form>`;
   }
 
@@ -1468,8 +1468,11 @@ const Forms = (() => {
       };
       document.getElementById('btnReset').onclick = () => {
         if (confirm('Esto reemplazará todos tus datos actuales por datos de ejemplo. ¿Continuar?')) {
-          state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos'); } }; document.getElementById('btnNuevoInicio') && (document.getElementById('btnNuevoInicio').onclick = () => { if (confirm('¿Iniciar desde cero? Se borrarán TODAS las cuentas y movimientos. Esto no se puede deshacer.')) { localStorage.removeItem('ledger:v1'); location.reload(); } }); = document.getElementById('btnNuevoInicio'); if (_bni) _bni.onclick = () => { if (confirm('⚠️ ¿Iniciar desde cero? Se eliminarán TODAS las cuentas, movimientos y datos. No se puede deshacer.')) { localStorage.removeItem('ledger:v1'); location.reload(); } };
-      
+          state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos');
+        }
+      };
+    }
+  }
 
   function renderTopbarStatus() { /* home/reports depend on live totals; simplest: re-render whole shell content on money-affecting actions */ }
 
@@ -1608,7 +1611,7 @@ const Forms = (() => {
     const del = document.getElementById('btnDeactivate');
     if (del) del.onclick = () => {
       if (confirm('¿Desactivar esta cuenta? Se conserva su historial pero dejará de sumar al balance.')) {
-        const idx = state.accounts.findIndex(a => a.id === existing.id); if (idx !== -1) { state.accounts.splice(idx, 1); state.movements = state.movements.filter(m => m.accountId !== existing.id && m.toAccountId !== existing.id); } persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta eliminada');
+        Engine.deleteAccount(state, existing.id); persist(); UI.closeSheet(); renderContent(); UI.toast('Cuenta desactivada');
       }
     };
   }
@@ -1634,7 +1637,7 @@ const Forms = (() => {
     };
   }
 
-  if (route.name === 'settings') { document.querySelectorAll('[data-theme]').forEach(b => b.onclick = () => { state.settings.theme = b.dataset.theme; persist(); applyTheme(); renderContent(); }); const lock = document.getElementById('lockToggle'); if (lock) lock.onchange = () => { state.settings.lockEnabled = lock.checked; persist(); }; document.getElementById('btnExport').onclick = () => { const csv = DB.exportCSV(state); const blob = new Blob([csv], { type: 'text/csv' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ledger-movimientos.csv'; a.click(); UI.toast('CSV exportado'); }; document.getElementById('btnReset').onclick = () => { if (confirm('Esto reemplazará todos tus datos actuales por datos de ejemplo. ¿Continuar?')) { state = DB.resetAll(); renderShell(); UI.toast('Datos restablecidos'); } }; const _bni = document.getElementById('btnNuevoInicio'); if (_bni) _bni.onclick = () => { if (confirm('¿Iniciar desde cero? Se borrarán TODAS las cuentas y movimientos. Esto no se puede deshacer.') ) { localStorage.removeItem('ledger:v1'); location.reload(); } }; } function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
+  function debounce(fn, ms) { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; }
 
   /* ---------------- Online/offline ---------------- */
   window.addEventListener('online', () => { const p = document.getElementById('statusPill'); if (p) { p.classList.remove('offline'); p.innerHTML = '<span class="status-dot"></span>En línea'; } });
